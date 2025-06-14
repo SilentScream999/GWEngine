@@ -19,141 +19,145 @@ static double     lastTime = 0.0;
 
 // Callback to adjust viewport on resize
 static void FramebufferSizeCallback(GLFWwindow* wnd, int width, int height) {
-    winWidth  = width;
-    winHeight = height;
-    glViewport(0, 0, width, height);
+	winWidth  = width;
+	winHeight = height;
+	glViewport(0, 0, width, height);
 }
 
-bool Renderer::RendererGL21::Init() {
-    if (!glfwInit()) {
-        Logger::Error("Failed to initialize GLFW.");
-        return false;
-    }
+bool Renderer::RendererGL21::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
+	meshes = msh;
+	return true;
+}
 
-    // Request OpenGL 2.1, resizable window + 4× MSAA
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    glfwWindowHint(GLFW_SAMPLES, 4);               // 4× MSAA
+bool Renderer::RendererGL21::Init(Camera *c) {
+	cam = c;
+	
+	if (!glfwInit()) {
+		Logger::Error("Failed to initialize GLFW.");
+		return false;
+	}
 
-    window = glfwCreateWindow(winWidth, winHeight,
-        "HL2-Style Engine - OpenGL 2.1", nullptr, nullptr);
-    if (!window) {
-        Logger::Error("Failed to create GLFW window.");
-        glfwTerminate();
-        return false;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);                            // vsync
+	// Request OpenGL 2.1, resizable window + 4× MSAA
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_SAMPLES, 4);               // 4× MSAA
 
-    // Set resize callback and initial viewport
-    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    glViewport(0, 0, winWidth, winHeight);
+	window = glfwCreateWindow(winWidth, winHeight,
+							"HL2-Style Engine - OpenGL 2.1", nullptr, nullptr);
+	if (!window) {
+		Logger::Error("Failed to create GLFW window.");
+		glfwTerminate();
+		return false;
+	}
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);                            // vsync
 
-    // Depth test + face culling
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW);
-    glCullFace(GL_FRONT);
-    // glEnable(GL_MULTISAMPLE);  ← remove this line
+	// Set resize callback and initial viewport
+	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+	glViewport(0, 0, winWidth, winHeight);
 
-    // Clear colour
-    glClearColor(20/255.0f, 20/255.0f, 50/255.0f, 1.0f);
+	// Depth test + face culling
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CW);
+	glCullFace(GL_FRONT);
+	// glEnable(GL_MULTISAMPLE);  ← remove this line
 
-    // === Lighting setup ===
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    glEnable(GL_NORMALIZE);
-    glShadeModel(GL_SMOOTH);
+	// Clear colour
+	glClearColor(20/255.0f, 20/255.0f, 50/255.0f, 1.0f);
 
-    // 1) Zero global ambient
-    GLfloat globalAmbient[4] = { 0, 0, 0, 1 };
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
+	// === Lighting setup ===
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_NORMALIZE);
+	glShadeModel(GL_SMOOTH);
 
-    // 2) Directional-light ambient & diffuse = 1.0
-    GLfloat lightAmb[4] = { 1, 1, 1, 1 };
-    GLfloat lightDif[4] = { 1, 1, 1, 1 };
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  lightAmb);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  lightDif);
+	// 1) Zero global ambient
+	GLfloat globalAmbient[4] = { 0, 0, 0, 1 };
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
-    // 3) Direction (DX9 style) = (1,1,1) → use (-1,-1,-1) in GL
-    GLfloat lightDir[4] = { -1, -1, -1, 0 };
-    glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
+	// 2) Directional-light ambient & diffuse = 1.0
+	GLfloat lightAmb[4] = { 1, 1, 1, 1 };
+	GLfloat lightDif[4] = { 1, 1, 1, 1 };
+	glLightfv(GL_LIGHT0, GL_AMBIENT,  lightAmb);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE,  lightDif);
 
-    // 4) Material ambient = 0.1, diffuse = 1.0
-    GLfloat matAmb[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    GLfloat matDif[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glMaterialfv(GL_FRONT, GL_AMBIENT,  matAmb);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE,  matDif);
+	// 3) Direction (DX9 style) = (1,1,1) → use (-1,-1,-1) in GL
+	GLfloat lightDir[4] = { -1, -1, -1, 0 };
+	glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
 
-    // Timer
-    lastTime = glfwGetTime();
+	// 4) Material ambient = 0.1, diffuse = 1.0
+	GLfloat matAmb[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	GLfloat matDif[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_AMBIENT,  matAmb);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE,  matDif);
 
-    // Load mesh…
-    mesh = std::make_shared<Mesh>();
-    if (!mesh->LoadFromOBJ("assets/models/test.obj")) {
-        Logger::Error("Failed to load OBJ model.");
-        return false;
-    }
+	// Timer
+	lastTime = glfwGetTime();
 
-    Logger::Info("GLFW window, context, lighting, and MSAA initialized.");
-    return true;
+	Logger::Info("GLFW window, context, lighting, and MSAA initialized.");
+	return true;
 }
 
 void Renderer::RendererGL21::RenderFrame() {
-    if (!window) return;
-    if (glfwWindowShouldClose(window)) {
-        Logger::Info("GLFW window requested close; exiting.");
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        exit(0);
-    }
+	if (!window) return;
+	if (glfwWindowShouldClose(window)) {
+		Logger::Info("GLFW window requested close; exiting.");
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		exit(0);
+	}
 
-    // Update rotation
-    double now = glfwGetTime();
-    float dt   = static_cast<float>(now - lastTime);
-    lastTime   = now;
-    angle     += glm::radians(45.0f) * dt;
+	// Update rotation
+	double now = glfwGetTime();
+	float dt   = static_cast<float>(now - lastTime);
+	lastTime   = now;
+	angle     += glm::radians(45.0f) * dt;
 
-    // Clear buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Clear buffers
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // 1) Projection with current aspect
-    {
-        float aspect = float(winWidth) / float(winHeight);
-        glm::mat4 proj = glm::perspective(
-            glm::radians(60.0f), aspect, 0.1f, 100.0f
-        );
-        // D3D-style Z remap
-        proj[2][2] = proj[2][2]*0.5f + proj[3][2]*0.5f;
-        proj[3][2] = proj[3][2]*0.5f;
-        glMatrixMode(GL_PROJECTION);
-        glLoadMatrixf(glm::value_ptr(proj));
-    }
+	// 1) Projection with current aspect
+	{
+		float aspect = float(winWidth) / float(winHeight);
+		glm::mat4 proj = glm::perspective(
+			glm::radians(60.0f), aspect, 0.1f, 100.0f
+		);
+		// D3D-style Z remap
+		proj[2][2] = proj[2][2]*0.5f + proj[3][2]*0.5f;
+		proj[3][2] = proj[3][2]*0.5f;
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(glm::value_ptr(proj));
+	}
 
-    // 2) View & model
-    glm::mat4 view = glm::lookAt(
-        glm::vec3(0,2,5), glm::vec3(0,0,0), glm::vec3(0,1,0)
-    );
-    glm::mat4 model = glm::rotate(
-        glm::mat4(1.0f), angle, glm::vec3(0,1,0)
-    );
+	// 2) View & model
+	glm::mat4 view = glm::lookAt(
+		cam->position, cam->lookAtPosition, glm::vec3(0,1,0) // ok here is the camera position and rotation. It's at 0, 2, 5, pointed at 0, 0, 0, with an up vector of y
+	);
+//	glm::mat4 model = glm::rotate(
+//		glm::mat4(1.0f), angle, glm::vec3(0,1,0) // this rotates the world by the angle variable, we're going to not do this anymore.
+//	);
 
-    // 3) Draw
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(view));
-    glPushMatrix();
-      glMultMatrixf(glm::value_ptr(model));
-      glBegin(GL_TRIANGLES);
-        for (const auto& v : mesh->vertices) {
-            glNormal3f(v.normal.x, v.normal.y, v.normal.z);
-            glVertex3f(v.position.x, v.position.y, v.position.z);
-        }
-      glEnd();
-    glPopMatrix();
+	// 3) Draw
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixf(glm::value_ptr(view));
+	glPushMatrix();
+//	glMultMatrixf(glm::value_ptr(model)); // again for the world rotation we're no longer doing.
+	glBegin(GL_TRIANGLES);
+	
+	for (const auto& mesh : meshes) {
+		for (const auto& v : mesh->vertices) {
+			glNormal3f(v.normal.x, v.normal.y, v.normal.z);
+			glVertex3f(v.position.x+mesh->position.x, v.position.y+mesh->position.y, v.position.z+mesh->position.z);
+		}
+	}
+	
+	glEnd();
+	glPopMatrix();
 
-    // Present
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+	// Present
+	glfwSwapBuffers(window);
+	glfwPollEvents();
 }

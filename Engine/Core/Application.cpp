@@ -5,23 +5,23 @@
 #include <chrono>
 
 void Core::Application::Run() {
-    Logger::Info("Engine starting...");
+	Logger::Info("Engine starting...");
 
-    if (!Renderer::RendererManager::InitRenderer()) {
-        Logger::Error("No supported renderer could be initialized!");
-        return;
-    }
+	if (!Renderer::RendererManager::InitRenderer()) {
+		Logger::Error("No supported renderer could be initialized!");
+		return;
+	}
 
-    Logger::Info("Entering main loop.");
-    bool running = true;
+	Logger::Info("Entering main loop.");
+	bool running = true;
 
-    while (running) {
-        Renderer::RendererManager::RenderFrame();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+	while (running) {
+		Renderer::RendererManager::RenderFrame();
+		std::this_thread::sleep_for(std::chrono::milliseconds(16)); // 16 millis so about 62.5 fps ish probably
 
-        // Optional exit logic, for now it runs indefinitely
-        // running = glfwWindowShouldClose(...) || PeekMessage(...) etc.
-    }
+		// Optional exit logic, for now it runs indefinitely
+		// running = glfwWindowShouldClose(...) || PeekMessage(...) etc.
+	}
 
-    Renderer::RendererManager::Shutdown();
+	Renderer::RendererManager::Shutdown();
 }

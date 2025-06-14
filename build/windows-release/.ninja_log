@@ -1,0 +1,11 @@
+# ninja log v6
+45	430	7715589470716441	CMakeFiles/HL2Engine.dir/Engine/main.cpp.obj	a05bc3e9165f3d05
+35	722	7715746852631708	CMakeFiles/HL2Engine.dir/Engine/Core/Application.cpp.obj	eec6ed8436e8d828
+31	1074	7715752718124128	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererDX9.cpp.obj	26f160e6459ef97d
+50	1120	7715664925356034	CMakeFiles/HL2Engine.dir/Engine/Renderer/Model.cpp.obj	7171a682e8be497c
+886	1557	7715765888247109	HL2Engine.exe	c14ff2319ba4bb3a
+28	703	7715753434946503	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererGL21.cpp.obj	e4b0015775c1583e
+42	1085	7715664925286266	CMakeFiles/HL2Engine.dir/Engine/Renderer/Mesh.cpp.obj	a64471f15359e050
+37	959	7715766500438985	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererManager.cpp.obj	5a65779a608256be
+110	1283	7715681409893524	CMakeFiles/HL2Engine.dir/Engine/Renderer/Camera.cpp.obj	bb8b9af4b24cad6e
+38	721	7715766604180676	HL2Engine.exe	c14ff2319ba4bb3a
