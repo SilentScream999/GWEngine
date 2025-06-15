@@ -9,10 +9,11 @@
 namespace Renderer {
 	class RendererGL21 : public IRenderer {
 	public:
-		bool Init(Camera *cam) override;
+		bool Init(Camera *cam, Runtime::Runtime *runtime) override;
 		void RenderFrame() override;
 		bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) override;
 	private:
 		std::vector<std::shared_ptr<Mesh>> meshes;
+		Runtime::Runtime*                  runtime;
 	};
 }

@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # === Option A: Use vcpkg for dependencies ===
 # (make sure you’ve run: vcpkg install glfw3 assimp)
 if(DEFINED ENV{VCPKG_ROOT})
-  set(CMAKE_TOOLCHAIN_FILE
-	  "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-	  CACHE STRING "")
+	set(CMAKE_TOOLCHAIN_FILE
+		"$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+		CACHE STRING "")
 endif()
 
 # === Find dependencies ===
