@@ -1,93 +1,81 @@
-#include <functional>
-#define GLM_ENABLE_EXPERIMENTAL // how dare you remove my swears. This line prevents clang from **bitching**
 #include "Camera.h"
-#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <GLFW/glfw3.h> // for GLFWwindow in ProcessInput
+#include <algorithm>
+#include "../Core/MathHelpers.h"
 
 Camera::Camera() {
-	// Initial position & rotation; adjust as desired
-	position = glm::vec3(0.0f, 2.0f, 5.0f);
-	rotation = glm::vec3(0.0f); // pitch=0, yaw=0
-	firstMouse = true;
-	lastX = lastY = 0.0;
+    transform.position = glm::vec3(0.0f, 2.0f, 5.0f);
+    transform.rotation = glm::vec3(0.0f);
+    firstMouse = true;
+    lastX = 0.0;
+    lastY = 0.0;
 }
 
-void Camera::ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float dt) {
-	float xoff = xpos * mouseSensitivity;
-	float yoff = ypos * mouseSensitivity;
-	
-	rotation.y += glm::radians(xoff);
-	rotation.x += glm::clamp(glm::radians(yoff), -glm::radians(89.0f), glm::radians(89.0f));
-	
-	// derive movement vectors
-	glm::mat4 rotM = glm::yawPitchRoll(rotation.y, rotation.x, rotation.z);
-	glm::vec3 forward = glm::normalize(glm::vec3(rotM * glm::vec4(0,0,-1,0)));
-	glm::vec3 right   = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
-	glm::vec3 up      = glm::vec3(0,1,0);
+void Camera::ProcessInput(float xpos,
+                          float ypos,
+                          std::function<bool(int)> KeyIsDown,
+                          float dt)
+{
+    float xoff = xpos * mouseSensitivity;
+    float yoff = ypos * mouseSensitivity;
 
-	// WASDQE
-	if (KeyIsDown('W')) position += forward * movementSpeed * dt;
-	if (KeyIsDown('S')) position -= forward * movementSpeed * dt;
-	if (KeyIsDown('A')) position -= right   * movementSpeed * dt;
-	if (KeyIsDown('D')) position += right   * movementSpeed * dt;
-	if (KeyIsDown('Q')) position -= up      * movementSpeed * dt;
-	if (KeyIsDown('E')) position += up      * movementSpeed * dt;
+    transform.rotation.y += glm::radians(xoff);
+    transform.rotation.x += glm::clamp(
+        glm::radians(yoff),
+        -glm::radians(89.0f),
+         glm::radians(89.0f)
+    );
+
+    if (KeyIsDown('W')) transform.TranslateBy({0, 0, -movementSpeed * dt});
+    if (KeyIsDown('S')) transform.TranslateBy({0, 0,  movementSpeed * dt});
+    if (KeyIsDown('A')) transform.TranslateBy({-movementSpeed * dt, 0, 0});
+    if (KeyIsDown('D')) transform.TranslateBy({ movementSpeed * dt, 0, 0});
+    if (KeyIsDown('Q')) transform.TranslateBy({0, -movementSpeed * dt, 0});
+    if (KeyIsDown('E')) transform.TranslateBy({0,  movementSpeed * dt, 0});
 }
 
-void Camera::ProcessInput(GLFWwindow* window, float dt) {
-	// Build rotation matrix from yaw (y), pitch (x), roll (z)
-	glm::mat4 rotMatrix = glm::yawPitchRoll(rotation.y, rotation.x, rotation.z);
-	glm::vec3 forward = glm::normalize(glm::vec3(rotMatrix * glm::vec4(0, 0, -1, 0)));
-	glm::vec3 right   = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
-	glm::vec3 up      = glm::vec3(0,1,0);
+void Camera::ProcessInput(GLFWwindow* window, float dt)
+{
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        transform.TranslateBy({0, 0, -movementSpeed * dt});
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        transform.TranslateBy({0, 0,  movementSpeed * dt});
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        transform.TranslateBy({-movementSpeed * dt, 0, 0});
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        transform.TranslateBy({ movementSpeed * dt, 0, 0});
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        transform.TranslateBy({0, -movementSpeed * dt, 0});
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        transform.TranslateBy({0,  movementSpeed * dt, 0});
 
-	// Keyboard: WASD for horizontal movement, Q/E for up/down
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		position += forward * movementSpeed * dt;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		position -= forward * movementSpeed * dt;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		position -= right   * movementSpeed * dt;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		position += right   * movementSpeed * dt;
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		position -= up      * movementSpeed * dt;
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		position += up      * movementSpeed * dt;
+    double xpos_d, ypos_d;
+    glfwGetCursorPos(window, &xpos_d, &ypos_d);
+    xpos_d *= -1.0;
 
-	// Mouse: get cursor position
-	double xpos, ypos;
-	glfwGetCursorPos(window, &xpos, &ypos);
-	xpos *= -1; // this inverts the horizontal look
-	
-	if (firstMouse) {
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
+    if (firstMouse) {
+        lastX = xpos_d;
+        lastY = ypos_d;
+        firstMouse = false;
+    }
 
-	float xoffset = float(xpos - lastX);
-	float yoffset = float(lastY - ypos); // reversed: moving up yields positive yoffset
-	lastX = xpos;
-	lastY = ypos;
+    float xoffset = float(xpos_d - lastX);
+    float yoffset = float(lastY - ypos_d);
+    lastX = xpos_d;
+    lastY = ypos_d;
 
-	// Apply rotation: convert degrees to radians
-	rotation.y += glm::radians(xoffset * mouseSensitivity); // yaw
-	rotation.x += glm::radians(yoffset * mouseSensitivity); // pitch
+    transform.rotation.y += glm::radians(xoffset * mouseSensitivity);
+    transform.rotation.x += glm::radians(yoffset * mouseSensitivity);
 
-	// Clamp pitch to avoid flipping
-	float pitchLimit = glm::radians(89.0f);
-	if (rotation.x >  pitchLimit) rotation.x =  pitchLimit;
-	if (rotation.x < -pitchLimit) rotation.x = -pitchLimit;
+    float pitchLimit = glm::radians(89.0f);
+    transform.rotation.x = std::clamp(transform.rotation.x, -pitchLimit, pitchLimit);
 }
 
 void Camera::updateForFrame() {
-	lookAtPosition = CalcLookAt(position, rotation);
+    lookAtPosition = transform.position + transform.GetForward();
 }
 
 glm::vec3 Camera::CalcLookAt(const glm::vec3& pos, const glm::vec3& rotEuler) {
-	glm::mat4 rotMatrix = glm::yawPitchRoll(rotEuler.y, rotEuler.x, rotEuler.z);
-	glm::vec3 forward = glm::vec3(rotMatrix * glm::vec4(0, 0, -1, 0));
-	return pos + forward;
+    return MathHelpers::CalcLookAt(pos, rotEuler);
 }

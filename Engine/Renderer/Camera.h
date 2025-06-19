@@ -2,24 +2,25 @@
 
 #include <functional>
 #include <glm/glm.hpp>
-#include <GLFW/glfw3.h> // for GLFWwindow* in ProcessInput
+#include <GLFW/glfw3.h>
+#include "../Core/Transform.h"
 
 class Camera {
 public:
 	Camera();
 
-	// Public state
-	glm::vec3 position;
-	glm::vec3 rotation;        // x = pitch, y = yaw, z = roll (unused)
-	glm::vec3 lookAtPosition;  // computed each frame
+	// Public state through transform
+	Transform transform;
+	glm::vec3 lookAtPosition;  // computed each frame (transform.position + forward)
 
 	// Tuning parameters
 	float movementSpeed    = 5.0f;   // units per second
 	float mouseSensitivity = 0.1f;   // degrees per pixel
 
 	// For GLFW mouse handling
-	bool firstMouse;
-	double lastX, lastY;
+	bool   firstMouse = true;
+	double lastX      = 0.0;
+	double lastY      = 0.0;
 
 	// Call once per frame after input to update lookAtPosition
 	void updateForFrame();
@@ -29,5 +30,5 @@ public:
 	void ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float deltaTime);
 
 private:
-	glm::vec3 CalcLookAt(const glm::vec3& position, const glm::vec3& rotationEulerRadians);
+	static glm::vec3 CalcLookAt(const glm::vec3& position, const glm::vec3& rotationEulerRadians);
 };

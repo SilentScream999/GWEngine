@@ -166,9 +166,9 @@ void Renderer::RendererGL21::RenderFrame() {
 	glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
 
 	glm::mat4 view = glm::lookAt(
-		cam->position,
-		cam->lookAtPosition,
-		glm::vec3(0, 1, 0) // up vector
+	cam->transform.position,      
+	cam->lookAtPosition,
+	glm::vec3(0, 1, 0)
 	);
 
 	glMatrixMode(GL_MODELVIEW);

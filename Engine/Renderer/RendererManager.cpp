@@ -22,8 +22,8 @@ namespace Renderer {
 
 	bool RendererManager::InitRenderer(Runtime::Runtime *runtime) {
 		// Initialize camera
-		cam->position = glm::vec3(0.0f, 1.0f, 5.0f);
-		cam->rotation = glm::vec3(0.0f);
+		cam->transform.position = glm::vec3(0.0f, 1.0f, 5.0f);
+		cam->transform.rotation = glm::vec3(0.0f);
 
 		bool success = false;
 
