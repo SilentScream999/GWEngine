@@ -13,6 +13,7 @@
 #define NK_SDL_RENDERER_IMPLEMENTATION
 #include "nuklear.h"
 #include "nuklear_sdl_renderer.h"
+#include "Logger.h"
 
 // SDL and nuklear context
 static SDL_Window *win;
@@ -20,6 +21,26 @@ static SDL_Renderer *renderer;
 static struct nk_context *ctx;
 
 bool Runtime::EditorRuntime::Init() {
+	std::vector<std::shared_ptr<Mesh>> meshes;
+
+	auto mesh1 = std::make_shared<Mesh>();
+	if (!mesh1->LoadFromOBJ("assets/models/test2.obj")) {
+		Logger::Error("Failed to load OBJ test2.obj");
+		return false;
+	}
+	mesh1->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	meshes.push_back(mesh1);
+
+	auto mesh2 = std::make_shared<Mesh>();
+	if (!mesh2->LoadFromOBJ("assets/models/test.obj")) {
+		Logger::Error("Failed to load OBJ test.obj");
+		return false;
+	}
+	mesh2->position = glm::vec3(1.0f, 1.0f, 1.0f);
+	meshes.push_back(mesh2);
+	
+	Renderer::RendererManager::SetMeshes(meshes);
+	
 	// Initialize SDL2
 	SDL_Init(SDL_INIT_VIDEO);
 	
@@ -53,11 +74,52 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	}
 	nk_input_end(ctx);
 	
+	// Capture the frame
+	Renderer::ImageData frameData = Renderer::RendererManager::rendererGL->CaptureFrame();
+	
+	// Create SDL texture from the pixel data
+	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+		frameData.pixels.data(), 
+		frameData.width, frameData.height, 
+		32, frameData.width * 4,
+		0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
+	);
+	
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
+	
+	// Convert to Nuklear image
+	struct nk_image nk_img = nk_image_ptr(texture);
+	
+	
 	// Create your nuklear GUI
-	if (nk_begin(ctx, "Hello Nuclear World!", nk_rect(50, 50, 400, 300),
+	
+	/* This here is for if you want a movable/resizable/minimizable/titled/scalable view. Do with that what you will
+	if (nk_begin(ctx, "View image!", nk_rect(150, 150, 400, 300),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
-		
+	*/
+	
+	int win_width, win_height;
+	SDL_GetWindowSize(win, &win_width, &win_height);
+	
+	int imageend_x = win_width*.75;
+	int imageend_y = win_height*.75;
+	
+	if (frameData.height != imageend_y || frameData.width != imageend_x) {
+		Renderer::RendererManager::rendererGL->setSize(imageend_x, imageend_y);
+	}
+	
+	int side_width = win_width-imageend_x;
+	
+	if (nk_begin(ctx, "Main image view", nk_rect(0, 0, imageend_x, imageend_y), 0)) { // the 0 on the end is just no modifiers
+		nk_layout_row_static(ctx, imageend_y, imageend_x, 1); // it's height followed by width for some reason
+		nk_image(ctx, nk_img);
+	}
+	nk_end(ctx);
+	
+	// Create your nuklear GUI
+	if (nk_begin(ctx, "Side bar.", nk_rect(imageend_x, 0, side_width, win_height), NK_WINDOW_BORDER)) {
 		nk_layout_row_static(ctx, 30, 200, 1);
 		nk_label(ctx, "Hello from Nuklear + SDL2!", NK_TEXT_CENTERED);
 		
@@ -80,7 +142,6 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	}
 	nk_end(ctx);
 	
-	
 	// render the frame
 	
 	// Clear screen
@@ -95,13 +156,11 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 }
 
 void Runtime::EditorRuntime::ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float dt) {
-	// Input is handled automatically by nuklear SDL2 backend in PrepareForFrameRender
-	// You can still do custom input handling here if needed
+	Renderer::RendererManager::cam->ProcessInput(xpos, ypos, KeyIsDown, dt); // later consider replacing this with a 'move omnicient?'
 }
 
 void Runtime::EditorRuntime::ProcessInput(GLFWwindow* window, float dt) {
-	// Since we're using SDL2 now, you might want to remove GLFW dependency
-	// or keep this for compatibility with your existing renderer
+	Renderer::RendererManager::cam->ProcessInput(window, dt); // this should later also be a 'move omnicient'
 }
 
 void Runtime::EditorRuntime::Cleanup() {

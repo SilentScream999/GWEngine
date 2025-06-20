@@ -6,6 +6,7 @@ Here's the game plan, we're going to make it such that the main thing - whatever
 
 #include <GLFW/glfw3.h>
 #include <functional>
+
 namespace Runtime {
 	class Runtime {
 	public:

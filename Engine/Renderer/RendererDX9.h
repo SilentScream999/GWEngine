@@ -16,6 +16,8 @@ public:
 	void RenderFrame() override;
 	bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) override;
 	bool KeyIsDown(int key);
+	ImageData CaptureFrame() override;
+	void setSize(int newWidth, int newHeight) override;
 	
 private:
 	HWND                               hwnd       = nullptr;

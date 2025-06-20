@@ -24,11 +24,12 @@ namespace Renderer {
 		static bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh);
 
 		static Camera*           cam;
-	
-	private:
-		static RendererType      s_selectedRenderer;
+		
 		static IRenderer*        rendererDX9;
 		static IRenderer*        rendererGL;
+		
+	private:
+		static RendererType      s_selectedRenderer;
 		static Runtime::Runtime* runtime;
 	};
 }

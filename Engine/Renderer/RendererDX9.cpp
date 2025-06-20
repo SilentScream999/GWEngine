@@ -19,249 +19,249 @@ static float g_rawMouseY = 0.0f;
 //-----------------------------------------------------------------------------
 // Force the cursor to be truly visible or hidden, fixing WinAPI counter issues
 void ForceShowCursor(bool show) {
-    int counter;
-    do {
-        counter = ShowCursor(show);
-    } while ((show && counter < 0) || (!show && counter >= 0));
+	int counter;
+	do {
+		counter = ShowCursor(show);
+	} while ((show && counter < 0) || (!show && counter >= 0));
 }
 
 //------------------------------------------------------------------------
 LRESULT CALLBACK RendererDX9::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (msg == WM_CREATE) {
-        auto cs = reinterpret_cast<CREATESTRUCT*>(lParam);
-        SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
-    }
-    RendererDX9* self = reinterpret_cast<RendererDX9*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	if (msg == WM_CREATE) {
+		auto cs = reinterpret_cast<CREATESTRUCT*>(lParam);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+	}
+	RendererDX9* self = reinterpret_cast<RendererDX9*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-    switch (msg) {
-    case WM_INPUT: {
-        UINT size = 0;
-        GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
-        if (size > 0) {
-            std::vector<BYTE> buf(size);
-            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buf.data(), &size, sizeof(RAWINPUTHEADER)) == size) {
-                RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buf.data());
-                if (raw->header.dwType == RIM_TYPEMOUSE) {
-                    g_rawMouseX -= static_cast<float>(raw->data.mouse.lLastX);
-                    g_rawMouseY -= static_cast<float>(raw->data.mouse.lLastY);
-                }
-            }
-        }
-        return 0;
-    }
+	switch (msg) {
+	case WM_INPUT: {
+		UINT size = 0;
+		GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+		if (size > 0) {
+			std::vector<BYTE> buf(size);
+			if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, buf.data(), &size, sizeof(RAWINPUTHEADER)) == size) {
+				RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buf.data());
+				if (raw->header.dwType == RIM_TYPEMOUSE) {
+					g_rawMouseX -= static_cast<float>(raw->data.mouse.lLastX);
+					g_rawMouseY -= static_cast<float>(raw->data.mouse.lLastY);
+				}
+			}
+		}
+		return 0;
+	}
 
-    case WM_DESTROY:
-        ClipCursor(nullptr);
-        ForceShowCursor(true);
-        PostQuitMessage(0);
-        return 0;
+	case WM_DESTROY:
+		ClipCursor(nullptr);
+		ForceShowCursor(true);
+		PostQuitMessage(0);
+		return 0;
 
-    case WM_KEYDOWN:
-        if (wParam == VK_ESCAPE && self) {
-            ClipCursor(nullptr);
-            ForceShowCursor(true);
-            self->mouseCaptured     = false;
-            self->mouseInputEnabled = false;
-        }
-        return 0;
+	case WM_KEYDOWN:
+		if (wParam == VK_ESCAPE && self) {
+			ClipCursor(nullptr);
+			ForceShowCursor(true);
+			self->mouseCaptured     = false;
+			self->mouseInputEnabled = false;
+		}
+		return 0;
 
-    case WM_LBUTTONDOWN:
-        if (self && !self->mouseCaptured) {
-            RECT rc; GetClientRect(self->hwnd, &rc);
-            POINT ul = { rc.left, rc.top }, lr = { rc.right, rc.bottom };
-            ClientToScreen(self->hwnd, &ul);
-            ClientToScreen(self->hwnd, &lr);
-            self->clipRect = { ul.x, ul.y, lr.x, lr.y };
-            ClipCursor(&self->clipRect);
-            ForceShowCursor(false);
+	case WM_LBUTTONDOWN:
+		if (self && !self->mouseCaptured) {
+			RECT rc; GetClientRect(self->hwnd, &rc);
+			POINT ul = { rc.left, rc.top }, lr = { rc.right, rc.bottom };
+			ClientToScreen(self->hwnd, &ul);
+			ClientToScreen(self->hwnd, &lr);
+			self->clipRect = { ul.x, ul.y, lr.x, lr.y };
+			ClipCursor(&self->clipRect);
+			ForceShowCursor(false);
 
-            g_rawMouseX = g_rawMouseY = 0.0f;
-            SetCursorPos(self->centerScreenPos.x, self->centerScreenPos.y);
+			g_rawMouseX = g_rawMouseY = 0.0f;
+			SetCursorPos(self->centerScreenPos.x, self->centerScreenPos.y);
 
-            self->mouseCaptured     = true;
-            self->mouseInputEnabled = true;
-        }
-        return 0;
+			self->mouseCaptured     = true;
+			self->mouseInputEnabled = true;
+		}
+		return 0;
 
-    case WM_SETFOCUS:
-        if (self && self->mouseCaptured) {
-            ClipCursor(&self->clipRect);
-            ForceShowCursor(false);
-        }
-        return 0;
+	case WM_SETFOCUS:
+		if (self && self->mouseCaptured) {
+			ClipCursor(&self->clipRect);
+			ForceShowCursor(false);
+		}
+		return 0;
 
-    case WM_KILLFOCUS:
-        if (self) {
-            ClipCursor(nullptr);
-            ForceShowCursor(true);
-            self->mouseCaptured     = false;
-            self->mouseInputEnabled = false;
-        }
-        return 0;
+	case WM_KILLFOCUS:
+		if (self) {
+			ClipCursor(nullptr);
+			ForceShowCursor(true);
+			self->mouseCaptured     = false;
+			self->mouseInputEnabled = false;
+		}
+		return 0;
 
-    case WM_SIZE:
-        if (self && self->d3dDevice && wParam != SIZE_MINIMIZED) {
-            // update stored size and reset device
-            self->width  = LOWORD(lParam);
-            self->height = HIWORD(lParam);
-            self->ResetDevice();
-        }
-        return 0;
+	case WM_SIZE:
+		if (self && self->d3dDevice && wParam != SIZE_MINIMIZED) {
+			// update stored size and reset device
+			self->width  = LOWORD(lParam);
+			self->height = HIWORD(lParam);
+			self->ResetDevice();
+		}
+		return 0;
 
-    default:
-        return DefWindowProc(hWnd, msg, wParam, lParam);
-    }
+	default:
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
 }
 
 //------------------------------------------------------------------------
 bool RendererDX9::Init(Camera* c, Runtime::Runtime *r) {
-    runtime = r;
-    cam = c;
-    HINSTANCE hInst = GetModuleHandle(nullptr);
+	runtime = r;
+	cam = c;
+	HINSTANCE hInst = GetModuleHandle(nullptr);
 
-    WNDCLASS wc = {};
-    wc.lpfnWndProc   = WndProc;
-    wc.hInstance     = hInst;
-    wc.lpszClassName = "DX9WindowClass";
-    RegisterClass(&wc);
+	WNDCLASS wc = {};
+	wc.lpfnWndProc   = WndProc;
+	wc.hInstance     = hInst;
+	wc.lpszClassName = "DX9WindowClass";
+	RegisterClass(&wc);
 
-    hwnd = CreateWindow(
-        "DX9WindowClass", "HL2-Style Engine - DirectX 9",
-        WS_OVERLAPPEDWINDOW, 100, 100,
-        static_cast<int>(width), static_cast<int>(height),
-        nullptr, nullptr, hInst, this
-    );
-    if (!hwnd) {
-        Logger::Error("Failed to create Win32 window.");
-        return false;
-    }
+	hwnd = CreateWindow(
+		"DX9WindowClass", "HL2-Style Engine - DirectX 9",
+		WS_OVERLAPPEDWINDOW, 100, 100,
+		static_cast<int>(width), static_cast<int>(height),
+		nullptr, nullptr, hInst, this
+	);
+	if (!hwnd) {
+		Logger::Error("Failed to create Win32 window.");
+		return false;
+	}
 
-    {
-        RECT rc; GetClientRect(hwnd, &rc);
-        POINT ul = { rc.left, rc.top }, lr = { rc.right, rc.bottom };
-        ClientToScreen(hwnd, &ul);
-        ClientToScreen(hwnd, &lr);
-        clipRect = { ul.x, ul.y, lr.x, lr.y };
+	{
+		RECT rc; GetClientRect(hwnd, &rc);
+		POINT ul = { rc.left, rc.top }, lr = { rc.right, rc.bottom };
+		ClientToScreen(hwnd, &ul);
+		ClientToScreen(hwnd, &lr);
+		clipRect = { ul.x, ul.y, lr.x, lr.y };
 
-        POINT ctr = { (rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2 };
-        ClientToScreen(hwnd, &ctr);
-        centerScreenPos = ctr;
+		POINT ctr = { (rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2 };
+		ClientToScreen(hwnd, &ctr);
+		centerScreenPos = ctr;
 
-        ClipCursor(&clipRect);
-        ForceShowCursor(false);
-        mouseCaptured     = true;
-        mouseInputEnabled = true;
-    }
+		ClipCursor(&clipRect);
+		ForceShowCursor(false);
+		mouseCaptured     = true;
+		mouseInputEnabled = true;
+	}
 
-    RAWINPUTDEVICE rid = {};
-    rid.usUsagePage = 0x01;
-    rid.usUsage     = 0x02;
-    rid.dwFlags     = RIDEV_INPUTSINK;
-    rid.hwndTarget  = hwnd;
-    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
-        Logger::Warn("Failed to register raw mouse input.");
-    }
+	RAWINPUTDEVICE rid = {};
+	rid.usUsagePage = 0x01;
+	rid.usUsage     = 0x02;
+	rid.dwFlags     = RIDEV_INPUTSINK;
+	rid.hwndTarget  = hwnd;
+	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+		Logger::Warn("Failed to register raw mouse input.");
+	}
 
-    if (!glfwInit()) {
-        Logger::Error("Failed to initialize GLFW.");
-    }
-    lastTime = glfwGetTime();
+	if (!glfwInit()) {
+		Logger::Error("Failed to initialize GLFW.");
+	}
+	lastTime = glfwGetTime();
 
-    d3d = Direct3DCreate9(D3D_SDK_VERSION);
-    if (!d3d) {
-        Logger::Error("Failed to create D3D9 object.");
-        return false;
-    }
+	d3d = Direct3DCreate9(D3D_SDK_VERSION);
+	if (!d3d) {
+		Logger::Error("Failed to create D3D9 object.");
+		return false;
+	}
 
-    ZeroMemory(&pp, sizeof(pp));
-    pp.Windowed               = TRUE;
-    pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
-    pp.BackBufferFormat       = D3DFMT_A8R8G8B8;
-    pp.BackBufferWidth        = width;
-    pp.BackBufferHeight       = height;
-    pp.EnableAutoDepthStencil = TRUE;
-    pp.AutoDepthStencilFormat = D3DFMT_D24S8;
+	ZeroMemory(&pp, sizeof(pp));
+	pp.Windowed               = TRUE;
+	pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
+	pp.BackBufferFormat       = D3DFMT_A8R8G8B8;
+	pp.BackBufferWidth        = width;
+	pp.BackBufferHeight       = height;
+	pp.EnableAutoDepthStencil = TRUE;
+	pp.AutoDepthStencilFormat = D3DFMT_D24S8;
 
-    // initial MSAA setup
-    D3DMULTISAMPLE_TYPE msType    = D3DMULTISAMPLE_4_SAMPLES;
-    DWORD               msQuality = 0;
-    if (SUCCEEDED(d3d->CheckDeviceMultiSampleType(
-            D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
-            pp.BackBufferFormat, pp.Windowed,
-            msType, &msQuality
-        ))) {
-        pp.MultiSampleType    = msType;
-        pp.MultiSampleQuality = (msQuality > 0 ? msQuality - 1 : 0);
-    } else {
-        Logger::Warn("4× MSAA not supported; falling back.\n");
-    }
+	// initial MSAA setup
+	D3DMULTISAMPLE_TYPE msType    = D3DMULTISAMPLE_4_SAMPLES;
+	DWORD               msQuality = 0;
+	if (SUCCEEDED(d3d->CheckDeviceMultiSampleType(
+			D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+			pp.BackBufferFormat, pp.Windowed,
+			msType, &msQuality
+		))) {
+		pp.MultiSampleType    = msType;
+		pp.MultiSampleQuality = (msQuality > 0 ? msQuality - 1 : 0);
+	} else {
+		Logger::Warn("4× MSAA not supported; falling back.\n");
+	}
 
-    if (FAILED(d3d->CreateDevice(
-            D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hwnd,
-            D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-            &pp, &d3dDevice
-        ))) {
-        Logger::Error("Failed to create D3D9 device.");
-        return false;
-    }
+	if (FAILED(d3d->CreateDevice(
+			D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hwnd,
+			D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+			&pp, &d3dDevice
+		))) {
+		Logger::Error("Failed to create D3D9 device.");
+		return false;
+	}
 
-    // render states
-    d3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,  TRUE);
-    d3dDevice->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, TRUE);
-    d3dDevice->SetRenderState(D3DRS_ZENABLE,               D3DZB_TRUE);
-    d3dDevice->SetRenderState(D3DRS_CULLMODE,              D3DCULL_CW);
+	// render states
+	d3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,  TRUE);
+	d3dDevice->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, TRUE);
+	d3dDevice->SetRenderState(D3DRS_ZENABLE,               D3DZB_TRUE);
+	d3dDevice->SetRenderState(D3DRS_CULLMODE,              D3DCULL_CW);
 
-    // initial viewport
-    D3DVIEWPORT9 vp = { 0, 0, width, height, 0.0f, 1.0f };
-    d3dDevice->SetViewport(&vp);
+	// initial viewport
+	D3DVIEWPORT9 vp = { 0, 0, width, height, 0.0f, 1.0f };
+	d3dDevice->SetViewport(&vp);
 
-    ShowWindow(hwnd, SW_SHOW);
-    Logger::Info("DX9 device created with MSAA.");
+	ShowWindow(hwnd, SW_SHOW);
+	Logger::Info("DX9 device created with MSAA.");
 
-    return true;
+	return true;
 }
 
 //------------------------------------------------------------------------
 void RendererDX9::ResetDevice() {
-    pp.BackBufferWidth  = width;
-    pp.BackBufferHeight = height;
+	pp.BackBufferWidth  = width;
+	pp.BackBufferHeight = height;
 
-    // re-check MSAA
-    D3DMULTISAMPLE_TYPE msType    = D3DMULTISAMPLE_4_SAMPLES;
-    DWORD               msQuality = 0;
-    if (SUCCEEDED(d3d->CheckDeviceMultiSampleType(
-            D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
-            pp.BackBufferFormat, pp.Windowed,
-            msType, &msQuality
-        ))) {
-        pp.MultiSampleType    = msType;
-        pp.MultiSampleQuality = (msQuality > 0 ? msQuality - 1 : 0);
-    } else {
-        Logger::Warn("4× MSAA not supported on Reset; falling back.\n");
-        pp.MultiSampleType    = D3DMULTISAMPLE_NONE;
-        pp.MultiSampleQuality = 0;
-    }
+	// re-check MSAA
+	D3DMULTISAMPLE_TYPE msType    = D3DMULTISAMPLE_4_SAMPLES;
+	DWORD               msQuality = 0;
+	if (SUCCEEDED(d3d->CheckDeviceMultiSampleType(
+			D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+			pp.BackBufferFormat, pp.Windowed,
+			msType, &msQuality
+		))) {
+		pp.MultiSampleType    = msType;
+		pp.MultiSampleQuality = (msQuality > 0 ? msQuality - 1 : 0);
+	} else {
+		Logger::Warn("4× MSAA not supported on Reset; falling back.\n");
+		pp.MultiSampleType    = D3DMULTISAMPLE_NONE;
+		pp.MultiSampleQuality = 0;
+	}
 
-    if (FAILED(d3dDevice->Reset(&pp))) {
-        Logger::Error("Failed to reset D3D device on resize.");
-        return;
-    }
+	if (FAILED(d3dDevice->Reset(&pp))) {
+		Logger::Error("Failed to reset D3D device on resize.");
+		return;
+	}
 
-    // re-apply render states
-    d3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,  TRUE);
-    d3dDevice->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, TRUE);
-    d3dDevice->SetRenderState(D3DRS_ZENABLE,               D3DZB_TRUE);
-    d3dDevice->SetRenderState(D3DRS_CULLMODE,              D3DCULL_CW);
+	// re-apply render states
+	d3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS,  TRUE);
+	d3dDevice->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, TRUE);
+	d3dDevice->SetRenderState(D3DRS_ZENABLE,               D3DZB_TRUE);
+	d3dDevice->SetRenderState(D3DRS_CULLMODE,              D3DCULL_CW);
 
-    // reset viewport to new size
-    D3DVIEWPORT9 vp;
-    vp.X      = 0;
-    vp.Y      = 0;
-    vp.Width  = width;
-    vp.Height = height;
-    vp.MinZ   = 0.0f;
-    vp.MaxZ   = 1.0f;
-    d3dDevice->SetViewport(&vp);
+	// reset viewport to new size
+	D3DVIEWPORT9 vp;
+	vp.X      = 0;
+	vp.Y      = 0;
+	vp.Width  = width;
+	vp.Height = height;
+	vp.MinZ   = 0.0f;
+	vp.MaxZ   = 1.0f;
+	d3dDevice->SetViewport(&vp);
 }
 
 //------------------------------------------------------------------------
@@ -283,7 +283,7 @@ bool RendererDX9::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
 		Logger::Error("Failed to create vertex buffer.");
 		return false;
 	}
-	
+
 	{
 		DXVertex* ptr = nullptr;
 		vb->Lock(0, 0, reinterpret_cast<void**>(&ptr), 0);
@@ -311,7 +311,7 @@ bool RendererDX9::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
 		Logger::Error("Failed to create index buffer.");
 		return false;
 	}
-	
+
 	{
 		uint32_t* ptr = nullptr;
 		ib->Lock(0, 0, reinterpret_cast<void**>(&ptr), 0);
@@ -340,12 +340,34 @@ void RendererDX9::HandleInputDX9(float dt) {
 
 	// warp cursor back to center each frame
 	SetCursorPos(centerScreenPos.x, centerScreenPos.y);
-	
+
 	// this takes a lambda which calls the KeyIsDown function because c++ is strange and this is the bestish way
 	runtime->ProcessInput(g_rawMouseX, g_rawMouseY, [this](int key){ return KeyIsDown(key); }, dt);
 	//cam->ProcessInput(g_rawMouseX, g_rawMouseY, [this](int key){ return KeyIsDown(key); }, dt);
-	
+
 	g_rawMouseX = g_rawMouseY = 0.0f;
+}
+
+void Renderer::RendererDX9::setSize(int newWidth, int newHeight) {
+	if (!hwnd) return;
+
+	// Store new size
+	width = newWidth;
+	height = newHeight;
+
+	// Resize the actual window (this sends a WM_SIZE message too)
+	SetWindowPos(
+		hwnd, nullptr,
+		0, 0, width, height,
+		SWP_NOZORDER | SWP_NOMOVE
+	);
+
+	// Optional: Reset device right away (if not relying solely on WM_SIZE)
+	ResetDevice();
+}
+
+Renderer::ImageData Renderer::RendererDX9::CaptureFrame() {
+	return ImageData();
 }
 
 //------------------------------------------------------------------------

@@ -105,6 +105,33 @@ bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	return true;
 }
 
+Renderer::ImageData Renderer::RendererGL21::CaptureFrame() {
+	ImageData data;
+	data.width = winWidth;
+	data.height = winHeight;
+	data.pixels.resize(winWidth * winHeight * 4); // RGBA for Nuklear
+	
+	// Read as RGBA
+	glReadPixels(0, 0, winWidth, winHeight, GL_RGBA, GL_UNSIGNED_BYTE, data.pixels.data());
+	
+	// Flip vertically (OpenGL is bottom-up, Nuklear expects top-down)
+	std::vector<unsigned char> flipped(winWidth * winHeight * 4);
+	for (int y = 0; y < winHeight; ++y) {
+		memcpy(
+			&flipped[y * winWidth * 4],
+			&data.pixels[(winHeight - 1 - y) * winWidth * 4],
+			winWidth * 4
+		);
+	}
+	
+	data.pixels = std::move(flipped);
+	return data;
+}
+
+void Renderer::RendererGL21::setSize(int newWidth, int newHeight) {
+	glfwSetWindowSize(window, newWidth, newHeight);
+}
+
 void Renderer::RendererGL21::RenderFrame() {
 	if (!window) return;
 
@@ -162,13 +189,14 @@ void Renderer::RendererGL21::RenderFrame() {
 		glMatrixMode(GL_PROJECTION);
 		glLoadMatrixf(glm::value_ptr(proj));
 	}
+	
 	GLfloat lightDir[4] = { -1.0f, -1.0f, -1.0f, 0.0f }; // directional light
 	glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
 
 	glm::mat4 view = glm::lookAt(
-	cam->transform.position,      
-	cam->lookAtPosition,
-	glm::vec3(0, 1, 0)
+		cam->transform.position,      
+		cam->lookAtPosition,
+		glm::vec3(0, 1, 0)
 	);
 
 	glMatrixMode(GL_MODELVIEW);

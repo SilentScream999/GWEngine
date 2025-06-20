@@ -28,9 +28,8 @@ void Core::Application::Run() {
 		runtime = new Runtime::PlayRuntime();
 	}
 	
-	
 	int choice2 = 2;
-	if (choice != 1) {
+	if (choice != 1) { // we only do opengl when doing editor
 		std::cout << "Select renderer:\n"
 			  << "  1) DirectX 9\n"
 			  << "  2) OpenGL 2.1\n"
