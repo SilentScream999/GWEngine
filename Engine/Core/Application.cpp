@@ -28,6 +28,26 @@ void Core::Application::Run() {
 		runtime = new Runtime::PlayRuntime();
 	}
 	
+	
+	int choice2 = 2;
+	if (choice != 1) {
+		std::cout << "Select renderer:\n"
+			  << "  1) DirectX 9\n"
+			  << "  2) OpenGL 2.1\n"
+			  << "Enter choice (1 or 2): ";
+		std::cin >> choice2;
+	}
+	
+	using namespace Renderer;
+	if (choice2 == 1) {
+		RendererManager::SelectRenderer(RendererType::DirectX9);
+	} else if (choice2 == 2) {
+		RendererManager::SelectRenderer(RendererType::OpenGL21);
+	} else {
+		std::cerr << "Invalid choice, defaulting to DirectX 9\n";
+		RendererManager::SelectRenderer(RendererType::DirectX9);
+	}
+	
 	if (!Renderer::RendererManager::InitRenderer(runtime)) {
 		Logger::Error("No supported renderer could be initialized!");
 		return;
@@ -46,6 +66,7 @@ void Core::Application::Run() {
 		// Optional exit logic, for now it runs indefinitely
 		// running = glfwWindowShouldClose(...) || PeekMessage(...) etc.
 	}
-
+	
+	runtime->Cleanup();
 	Renderer::RendererManager::Shutdown();
 }

@@ -19,7 +19,9 @@ find_package(OpenGL REQUIRED)
 set(glfw3_DIR   "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/share/glfw3")
 set(assimp_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/share/assimp")
 set(glm_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/share/glm")
+set(SDL2_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/share/SDL2")
 
+find_package(SDL2 CONFIG REQUIRED)
 find_package(glfw3  CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -59,4 +61,8 @@ target_link_libraries(HL2Engine PRIVATE
 	# DirectX9:
 	d3d9.lib
 	glm::glm
+
+	# SDL2: this imported target brings in both headers and libs
+	SDL2::SDL2
+	SDL2::SDL2main
 )

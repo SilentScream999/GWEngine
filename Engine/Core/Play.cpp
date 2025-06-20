@@ -31,6 +31,10 @@ void Runtime::PlayRuntime::PrepareForFrameRender() {
 	// nothing to do here I spose? for now
 }
 
+void Runtime::PlayRuntime::Cleanup() {
+	
+}
+
 void Runtime::PlayRuntime::ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float dt) {
 	Renderer::RendererManager::cam->ProcessInput(xpos, ypos, KeyIsDown, dt); // later consider replacing this with a 'move omnicient?'
 }

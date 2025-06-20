@@ -11,6 +11,7 @@ namespace Runtime {
 	public:
 		bool Init() override;
 		void PrepareForFrameRender() override;
+		void Cleanup() override;
 		
 		virtual void ProcessInput(GLFWwindow* window, float deltaTime) override;
 		virtual void ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float deltaTime) override;
