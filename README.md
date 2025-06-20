@@ -1,0 +1,3 @@
+-Work on editor
+-Skybox
+-Fix DX9 lag
