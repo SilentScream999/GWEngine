@@ -347,7 +347,7 @@ bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
 	GLfloat lightAmb[4] = {0,0,0,1};
-	GLfloat lightDif[4] = {1,1,1,1};
+	GLfloat lightDif[4] = {skybox_r,skybox_g,skybox_b,1};
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmb);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);
 

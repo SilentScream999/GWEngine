@@ -712,8 +712,13 @@ void RendererDX9::RenderFrame() {
 
 	D3DLIGHT9 light = {};
 	light.Type      = D3DLIGHT_DIRECTIONAL;
-	light.Diffuse.r = light.Diffuse.g = light.Diffuse.b = 1.0f;
-	light.Ambient.r = light.Ambient.g = light.Ambient.b = 1.0f;
+	light.Diffuse.r = skybox_r;
+	light.Diffuse.g = skybox_g;
+	light.Diffuse.b = skybox_b;
+	light.Ambient.r = skybox_r;
+	light.Ambient.g = skybox_g;
+	light.Ambient.b = skybox_b;
+	
 	light.Direction = {0.0f, -1.0f, 0.0f}; // straight down
 	d3dDevice->SetLight(0, &light);
 	d3dDevice->LightEnable(0, TRUE);
