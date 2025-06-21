@@ -6,4 +6,4 @@
 
 - Better loading (OGL & DX9)
 
-- Editor render window controls
+- Add horizontal scroll/Add screenToEditorWorld for object selection
