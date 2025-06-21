@@ -18,6 +18,7 @@ public:
 	bool KeyIsDown(int key);
 	ImageData CaptureFrame() override;
 	void setSize(int newWidth, int newHeight) override;
+	void RenderSkybox();
 	
 private:
 	HWND                               hwnd       = nullptr;

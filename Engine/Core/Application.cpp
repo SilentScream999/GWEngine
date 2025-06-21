@@ -28,6 +28,7 @@ void Core::Application::Run() {
 		runtime = new Runtime::PlayRuntime();
 	}
 	
+	
 	int choice2 = 2;
 	if (choice != 1) { // we only do opengl when doing editor
 		std::cout << "Select renderer:\n"
