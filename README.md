@@ -6,4 +6,4 @@
 
 - Better loading (OGL & DX9)
 
-- Invisible window, asset tab, tab stretch, Drag bars
+- Editor render window controls
