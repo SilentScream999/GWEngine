@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Mesh.h"
+#include "../Core/stb_impl.h"
 
 // globals for our window and state
 static GLFWwindow* window      = nullptr;
@@ -90,91 +91,21 @@ static float skyboxVertices[] = {
 	-1.0,   1.0,    -1.0,   0.251,   0.3333333333333333,
 };
 
-// Simple bitmap loader for 24-bit BMP files
-static unsigned char* LoadBMP(const char* filename, int* width, int* height) {
-	FILE* file = fopen(filename, "rb");
-	if (!file) {
-		printf("Error: Could not open bitmap file %s\n", filename);
-		return nullptr;
-	}
-
-	// Read BMP header
-	unsigned char header[54];
-	if (fread(header, 1, 54, file) != 54) {
-		printf("Error: Invalid BMP file header\n");
-		fclose(file);
-		return nullptr;
-	}
-
-	// Check if it's a valid BMP file
-	if (header[0] != 'B' || header[1] != 'M') {
-		printf("Error: Not a valid BMP file\n");
-		fclose(file);
-		return nullptr;
-	}
-
-	// Extract image info
-	int dataOffset = *(int*)&header[10];
-	*width = *(int*)&header[18];
-	*height = *(int*)&header[22];
-	int bitsPerPixel = *(short*)&header[28];
-
-	if (bitsPerPixel != 24) {
-		printf("Error: Only 24-bit BMP files are supported\n");
-		fclose(file);
-		return nullptr;
-	}
-
-	// Calculate row padding (BMP rows are padded to 4-byte boundaries)
-	int rowPadding = (4 - ((*width * 3) % 4)) % 4;
-	int imageSize = (*width * 3 + rowPadding) * *height;
-
-	// Allocate memory for image data
-	unsigned char* imageData = new unsigned char[*width * *height * 3];
-	unsigned char* bmpData = new unsigned char[imageSize];
-
-	// Read image data
-	fseek(file, dataOffset, SEEK_SET);
-	if (fread(bmpData, 1, imageSize, file) != imageSize) {
-		printf("Error: Could not read image data\n");
-		delete[] imageData;
-		delete[] bmpData;
-		fclose(file);
-		return nullptr;
-	}
-
-	// Convert BGR to RGB and remove padding
-	for (int y = 0; y < *height; y++) {
-		for (int x = 0; x < *width; x++) {
-			int srcIndex = y * (*width * 3 + rowPadding) + x * 3;
-			int dstIndex = ((*height - 1 - y) * *width + x) * 3; // Flip vertically
-			
-			imageData[dstIndex + 0] = bmpData[srcIndex + 2]; // R
-			imageData[dstIndex + 1] = bmpData[srcIndex + 1]; // G
-			imageData[dstIndex + 2] = bmpData[srcIndex + 0]; // B
-		}
-	}
-	
-	delete[] bmpData;
-	fclose(file);
-	return imageData;
-}
-
 // Load skybox texture from bitmap file
 void Renderer::RendererGL21::CreateSkyboxTexture(const char* filename) {
-	int width, height;
-	unsigned char* data = LoadBMP(filename, &width, &height);
+	int width, height, channels;
+	unsigned char* data = stb_impl::LoadImageFromFile(filename, &width, &height, &channels);
 	
 	if (!data) {
 		printf("Failed to load skybox texture, creating default texture\n");
 		// Create a simple default texture if loading fails
 		const int size = 256;
-		data = new unsigned char[size * size * 3];
+		data = new unsigned char[size * size * channels];
 		width = height = size;
 		
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
-				int idx = (y * size + x) * 3;
+				int idx = (y * size + x) * channels;
 				float t = (float)y / (float)size;
 				data[idx + 0] = (unsigned char)(134 + (206 - 134) * t);
 				data[idx + 1] = (unsigned char)(206 + (234 - 206) * t);
@@ -223,7 +154,7 @@ void Renderer::RendererGL21::CreateSkyboxTexture(const char* filename) {
 		// Convert UV to pixel coordinates
 		int pixelX = (int)(x * (width - 1));
 		int pixelY = (int)(y * (height - 1));
-		int srcIndex = (pixelY * width + pixelX) * 3;
+		int srcIndex = (pixelY * width + pixelX) * channels;
 		
 		totalr += data[srcIndex] * strength;
 		totalg += data[srcIndex+1] * strength;
@@ -346,7 +277,7 @@ bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	GLfloat globalAmbient[4] = {1,1,1,1};
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
-	GLfloat lightAmb[4] = {0,0,0,1};
+	GLfloat lightAmb[4] = {skybox_r,skybox_g,skybox_b,1};
 	GLfloat lightDif[4] = {skybox_r,skybox_g,skybox_b,1};
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmb);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);

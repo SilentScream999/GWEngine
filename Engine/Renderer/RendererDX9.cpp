@@ -8,9 +8,7 @@
 #include <glm/glm.hpp>
 #include <windows.h>
 #include <vector>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "../Core/stb_impl.h"
 
 using namespace Renderer;
 
@@ -18,15 +16,6 @@ using namespace Renderer;
 // raw mouse deltas
 static float g_rawMouseX = 0.0f;
 static float g_rawMouseY = 0.0f;
-
-unsigned char* LoadImageFromFile(const char* filename, int* width, int* height, int* channels) {
-	return stbi_load(filename, width, height, channels, 0);
-}
-
-void FreeImageData(unsigned char* data) {
-	stbi_image_free(data);
-}
-
 
 struct SkyboxVertex {
 	float x, y, z;
@@ -347,7 +336,7 @@ bool RendererDX9::Init(Camera* c, Runtime::Runtime *r) {
 	
 	// Load skybox texture
 	int width, height, channels;
-	unsigned char* imageData = LoadImageFromFile(texturePath.c_str(), &width, &height, &channels);
+	unsigned char* imageData = stb_impl::LoadImageFromFile(texturePath.c_str(), &width, &height, &channels);
 	
 	if (!imageData) {
 		Logger::Error("Failed to load image data: " + texturePath);
@@ -359,7 +348,7 @@ bool RendererDX9::Init(Camera* c, Runtime::Runtime *r) {
 	hr = d3dDevice->CreateTexture(width, height, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &skyboxTexture, nullptr);
 	if (FAILED(hr)) {
 		Logger::Error("Failed to create texture");
-		FreeImageData(imageData);
+		stb_impl::FreeImageData(imageData);
 		skyboxVB->Release();
 		skyboxVB = nullptr;
 		return false;
@@ -432,7 +421,7 @@ bool RendererDX9::Init(Camera* c, Runtime::Runtime *r) {
 	skybox_g = (totalg/totalstrength)/255.0f;
 	skybox_b = (totalb/totalstrength)/255.0f;
 	
-	FreeImageData(imageData);
+	stb_impl::FreeImageData(imageData);
 	
 	Logger::Info("Skybox initialized successfully");
 	

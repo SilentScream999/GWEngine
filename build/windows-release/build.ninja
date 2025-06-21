@@ -76,6 +76,15 @@ build CMakeFiles\HL2Engine.dir\Engine\Core\Play.cpp.obj: CXX_COMPILER__HL2Engine
   TARGET_COMPILE_PDB = CMakeFiles\HL2Engine.dir\
   TARGET_PDB = HL2Engine.pdb
 
+build CMakeFiles\HL2Engine.dir\Engine\Core\stb_impl.cpp.obj: CXX_COMPILER__HL2Engine_unscanned_Release D$:\Users\adamj\Documents\C\GWEngine\Engine\Core\stb_impl.cpp || cmake_object_order_depends_target_HL2Engine
+  DEFINES = -DGLFW_DLL
+  FLAGS = /DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -std:c++17 -MD
+  INCLUDES = -ID:\Users\adamj\Documents\C\GWEngine\Engine -external:ID:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\include -external:ID:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\include\SDL2 -external:W0
+  OBJECT_DIR = CMakeFiles\HL2Engine.dir
+  OBJECT_FILE_DIR = CMakeFiles\HL2Engine.dir\Engine\Core
+  TARGET_COMPILE_PDB = CMakeFiles\HL2Engine.dir\
+  TARGET_PDB = HL2Engine.pdb
+
 build CMakeFiles\HL2Engine.dir\Engine\Renderer\Camera.cpp.obj: CXX_COMPILER__HL2Engine_unscanned_Release D$:\Users\adamj\Documents\C\GWEngine\Engine\Renderer\Camera.cpp || cmake_object_order_depends_target_HL2Engine
   DEFINES = -DGLFW_DLL
   FLAGS = /DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -std:c++17 -MD
@@ -147,7 +156,7 @@ build CMakeFiles\HL2Engine.dir\Engine\main.cpp.obj: CXX_COMPILER__HL2Engine_unsc
 #############################################
 # Link the executable HL2Engine.exe
 
-build HL2Engine.exe: CXX_EXECUTABLE_LINKER__HL2Engine_Release CMakeFiles\HL2Engine.dir\Engine\Core\Application.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Core\Editor.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Core\Play.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Camera.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Mesh.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Model.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererDX9.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererGL21.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererManager.cpp.obj CMakeFiles\HL2Engine.dir\Engine\main.cpp.obj | D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glfw3dll.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\assimp-vc143-mt.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glm.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\SDL2.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\manual-link\SDL2main.lib
+build HL2Engine.exe: CXX_EXECUTABLE_LINKER__HL2Engine_Release CMakeFiles\HL2Engine.dir\Engine\Core\Application.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Core\Editor.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Core\Play.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Core\stb_impl.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Camera.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Mesh.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\Model.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererDX9.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererGL21.cpp.obj CMakeFiles\HL2Engine.dir\Engine\Renderer\RendererManager.cpp.obj CMakeFiles\HL2Engine.dir\Engine\main.cpp.obj | D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glfw3dll.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\assimp-vc143-mt.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glm.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\SDL2.lib D$:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\manual-link\SDL2main.lib
   FLAGS = /DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -MD
   LINK_FLAGS = /machine:x64 /INCREMENTAL:NO /subsystem:console
   LINK_LIBRARIES = D:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glfw3dll.lib  opengl32.lib  D:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\assimp-vc143-mt.lib  d3d9.lib  D:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\glm.lib  D:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\SDL2.lib  D:\Users\adamj\Documents\C\vcpkg\installed\x64-windows\lib\manual-link\SDL2main.lib  shell32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib

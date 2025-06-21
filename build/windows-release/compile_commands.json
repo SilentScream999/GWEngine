@@ -19,6 +19,12 @@
 },
 {
   "directory": "D:/Users/adamj/Documents/C/GWEngine/build/windows-release",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1434~1.319\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine -external:ID:\\Users\\adamj\\Documents\\C\\vcpkg\\installed\\x64-windows\\include -external:ID:\\Users\\adamj\\Documents\\C\\vcpkg\\installed\\x64-windows\\include\\SDL2 -external:W0 /DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -std:c++17 -MD /FoCMakeFiles\\HL2Engine.dir\\Engine\\Core\\stb_impl.cpp.obj /FdCMakeFiles\\HL2Engine.dir\\ /FS -c D:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine\\Core\\stb_impl.cpp",
+  "file": "D:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine\\Core\\stb_impl.cpp",
+  "output": "CMakeFiles\\HL2Engine.dir\\Engine\\Core\\stb_impl.cpp.obj"
+},
+{
+  "directory": "D:/Users/adamj/Documents/C/GWEngine/build/windows-release",
   "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1434~1.319\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine -external:ID:\\Users\\adamj\\Documents\\C\\vcpkg\\installed\\x64-windows\\include -external:ID:\\Users\\adamj\\Documents\\C\\vcpkg\\installed\\x64-windows\\include\\SDL2 -external:W0 /DWIN32 /D_WINDOWS /GR /EHsc /O2 /Ob2 /DNDEBUG -std:c++17 -MD /FoCMakeFiles\\HL2Engine.dir\\Engine\\Renderer\\Camera.cpp.obj /FdCMakeFiles\\HL2Engine.dir\\ /FS -c D:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine\\Renderer\\Camera.cpp",
   "file": "D:\\Users\\adamj\\Documents\\C\\GWEngine\\Engine\\Renderer\\Camera.cpp",
   "output": "CMakeFiles\\HL2Engine.dir\\Engine\\Renderer\\Camera.cpp.obj"
