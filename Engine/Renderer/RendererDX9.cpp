@@ -471,65 +471,118 @@ void RendererDX9::ResetDevice() {
 	d3dDevice->SetViewport(&vp);
 }
 
+bool RendererDX9::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
+	// Ensure the vectors are large enough
+	if (indx >= meshes.size()) {
+		meshes.resize(indx + 1);
+		meshBuffers.resize(indx + 1);
+	}
+	
+	meshes[indx] = mesh;
+	
+	int vertexCount = mesh->vertices.size();
+	DX9MeshData& meshData = meshBuffers[indx];
+	
+	// Check if we need to recreate the vertex buffer
+	bool needNewVertexBuffer = false;
+	if (!meshData.vertexBuffer) {
+		needNewVertexBuffer = true;
+	} else if (meshData.vertexCount != vertexCount) {
+		// Size changed, need new buffer
+		needNewVertexBuffer = true;
+		meshData.vertexBuffer->Release();
+		meshData.vertexBuffer = nullptr;
+	}
+	
+	// Create or reuse vertex buffer
+	if (needNewVertexBuffer) {
+		HRESULT hr = d3dDevice->CreateVertexBuffer(
+			vertexCount * sizeof(DXVertex),
+			D3DUSAGE_WRITEONLY,
+			D3DFVF_DXVERTEX,
+			D3DPOOL_MANAGED,
+			&meshData.vertexBuffer,
+			nullptr
+		);
+		
+		if (FAILED(hr)) {
+			Logger::Error("Failed to create vertex buffer for mesh");
+			return false;
+		}
+	}
+	
+	// Always update the vertex data (even if buffer was reused)
+	DXVertex* verts;
+	meshData.vertexBuffer->Lock(0, 0, (void**)&verts, 0);
+	for (int i = 0; i < vertexCount; i++) {
+		const auto& v = mesh->vertices[i];
+		verts[i].x = v.position.x;
+		verts[i].y = v.position.y;
+		verts[i].z = v.position.z;
+		
+		verts[i].nx = v.normal.x;
+		verts[i].ny = v.normal.y;
+		verts[i].nz = v.normal.z;  // Fix: was nx again
+		
+		// Add UV coordinates if you have them:
+		// verts[i].u = v.uv.x;
+		// verts[i].v = v.uv.y;
+	}
+	meshData.vertexBuffer->Unlock();
+	
+	// Check if we need to recreate the index buffer
+	bool needNewIndexBuffer = false;
+	if (!meshData.indexBuffer) {
+		needNewIndexBuffer = true;
+	} else if (meshData.vertexCount != vertexCount) {
+		// Size changed, need new buffer
+		needNewIndexBuffer = true;
+		meshData.indexBuffer->Release();
+		meshData.indexBuffer = nullptr;
+	}
+	
+	// Create or reuse index buffer
+	if (needNewIndexBuffer) {
+		HRESULT hr = d3dDevice->CreateIndexBuffer(
+			vertexCount * sizeof(WORD),
+			D3DUSAGE_WRITEONLY,
+			D3DFMT_INDEX16,
+			D3DPOOL_MANAGED,
+			&meshData.indexBuffer,
+			nullptr
+		);
+		
+		if (FAILED(hr)) {
+			Logger::Error("Failed to create index buffer for mesh");
+			return false;
+		}
+		
+		// Fill index buffer with sequential indices (only when creating new buffer)
+		WORD* indices;
+		meshData.indexBuffer->Lock(0, 0, (void**)&indices, 0);
+		for (int i = 0; i < vertexCount; i++) {
+			indices[i] = i;
+		}
+		meshData.indexBuffer->Unlock();
+	}
+	
+	// Update metadata
+	meshData.vertexCount = vertexCount;
+	meshData.triangleCount = vertexCount / 3;
+	
+	return true;
+}
+
 //------------------------------------------------------------------------
 bool RendererDX9::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
 	meshes = std::move(msh);
-	numberOfMeshVertexes = 0; UINT numindx = 0;
-	for (auto& mesh : meshes) {
-		numindx += static_cast<UINT>(mesh->indices.size());
-		numberOfMeshVertexes += static_cast<UINT>(mesh->vertices.size());
-	}
-	numIndices = numindx;
-
-	// Vertex buffer
-	if (vb) { vb->Release(); vb = nullptr; }
-	if (FAILED(d3dDevice->CreateVertexBuffer(
-			numberOfMeshVertexes * sizeof(DXVertex),
-			0, D3DFVF_DXVERTEX, D3DPOOL_MANAGED, &vb, nullptr
-		))) {
-		Logger::Error("Failed to create vertex buffer.");
-		return false;
-	}
-
-	{
-		DXVertex* ptr = nullptr;
-		vb->Lock(0, 0, reinterpret_cast<void**>(&ptr), 0);
-		int idx = 0;
-		for (auto& mesh : meshes) {
-			for (auto& v : mesh->vertices) {
-				ptr[idx++] = {
-					v.position.x + mesh->position.x,
-					v.position.y + mesh->position.y,
-					v.position.z + mesh->position.z,
-					v.normal.x, v.normal.y, v.normal.z,
-					v.texcoord.x, v.texcoord.y
-				};
-			}
-		}
-		vb->Unlock();
-	}
-
-	// Index buffer
-	if (ib) { ib->Release(); ib = nullptr; }
-	if (FAILED(d3dDevice->CreateIndexBuffer(
-			numIndices * sizeof(uint32_t),
-			0, D3DFMT_INDEX32, D3DPOOL_MANAGED, &ib, nullptr
-		))) {
-		Logger::Error("Failed to create index buffer.");
-		return false;
-	}
-
-	{
-		uint32_t* ptr = nullptr;
-		ib->Lock(0, 0, reinterpret_cast<void**>(&ptr), 0);
-		int idx = 0; uint32_t base = 0;
-		for (auto& mesh : meshes) {
-			for (auto i : mesh->indices) {
-				ptr[idx++] = i + base;
-			}
-			base += static_cast<uint32_t>(mesh->vertices.size());
-		}
-		ib->Unlock();
+	
+	meshBuffers.clear();
+	meshBuffers.resize(meshes.size());
+	
+	for (int meshi = 0; meshi < meshes.size(); meshi++) {
+		const auto& mesh = meshes[meshi];
+		UpdateMesh(meshi, mesh);
 	}
 
 	return true;
@@ -673,21 +726,26 @@ void RendererDX9::RenderFrame() {
 	glm::mat4 viewGL = glm::lookAt(cam->transform.position, cam->lookAtPosition, glm::vec3(0, 1, 0));
 	
 	
-	//added for skybox
-	glm::mat4 skyboxViewGL = glm::mat4(glm::mat3(viewGL)); // Keep only rotation
-	auto skyboxMtr = ToD3D(skyboxViewGL);
-	d3dDevice->SetTransform(D3DTS_VIEW, &skyboxMtr);
-	RenderSkybox();
+	// === RENDER SKYBOX ===
+	// Set skybox view matrix (rotation only, no translation)
+	glm::mat4 skyboxViewGL = glm::mat4(glm::mat3(viewGL));
+	auto skyboxViewMtr = ToD3D(skyboxViewGL);
+	d3dDevice->SetTransform(D3DTS_VIEW, &skyboxViewMtr);
 	
+	// Set skybox world matrix to identity (no transformation)
+	D3DMATRIX identityMatrix = {
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	};
+	d3dDevice->SetTransform(D3DTS_WORLD, &identityMatrix);
+	
+	RenderSkybox();
 	
 	auto mtr2 = ToD3D(viewGL);
 	d3dDevice->SetTransform(D3DTS_VIEW, &mtr2);
 	
-	// draw meshes
-	d3dDevice->SetFVF(D3DFVF_DXVERTEX);
-	d3dDevice->SetStreamSource(0, vb, 0, sizeof(DXVertex));
-	d3dDevice->SetIndices(ib);
-
 	// material + lighting
 	D3DMATERIAL9 mat = {};
 	mat.Diffuse.r = mat.Diffuse.g = mat.Diffuse.b = 1.0f; // this is the color of the object
@@ -712,14 +770,35 @@ void RendererDX9::RenderFrame() {
 	d3dDevice->SetLight(0, &light);
 	d3dDevice->LightEnable(0, TRUE);
 	d3dDevice->SetRenderState(D3DRS_LIGHTING, TRUE);
-
-	// draw
-	d3dDevice->DrawIndexedPrimitive(
-		D3DPT_TRIANGLELIST,
-		0, 0,
-		numberOfMeshVertexes,
-		0, numIndices/3
-	);
+	
+	for (size_t i = 0; i < meshes.size() && i < meshBuffers.size(); i++) {
+		const auto& mesh = meshes[i];
+		const auto& meshData = meshBuffers[i];
+		
+		// Set this mesh's buffers
+		d3dDevice->SetStreamSource(0, meshData.vertexBuffer, 0, sizeof(DXVertex));
+		d3dDevice->SetIndices(meshData.indexBuffer);
+		
+		// Create world transformation matrix for this mesh
+		glm::mat4 worldGL = glm::mat4(1.0f);
+		worldGL = glm::translate(worldGL, mesh->transform.position);
+		worldGL = glm::rotate(worldGL, glm::radians(mesh->transform.rotation.y), glm::vec3(0,1,0));
+		worldGL = glm::rotate(worldGL, glm::radians(mesh->transform.rotation.x), glm::vec3(1,0,0));
+		worldGL = glm::rotate(worldGL, glm::radians(mesh->transform.rotation.z), glm::vec3(0,0,1));
+		
+		auto worldMtr = ToD3D(worldGL);
+		d3dDevice->SetTransform(D3DTS_WORLD, &worldMtr);
+		
+		// Draw this mesh
+		d3dDevice->DrawIndexedPrimitive(
+			D3DPT_TRIANGLELIST,
+			0,                      // BaseVertexIndex
+			0,                      // MinIndex  
+			meshData.vertexCount,   // NumVertices
+			0,                      // StartIndex
+			meshData.triangleCount  // PrimitiveCount
+		);
+	}
 
 	d3dDevice->EndScene();
 	d3dDevice->Present(nullptr, nullptr, nullptr, nullptr);

@@ -59,7 +59,7 @@ bool Mesh::LoadFromOBJ(const std::string& path) {
 	std::cout << "Loaded OBJ: " << path
 			  << " (" << vertices.size() << " verts)\n";
 	
-	position = *new glm::vec3(0, 0, 0); // we set the mesh's default location to 0, 0, 0
+	transform = *new Transform();
 	
 	return true;
 }

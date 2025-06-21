@@ -212,6 +212,11 @@ bool Renderer::RendererGL21::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
 	return true;
 }
 
+bool Renderer::RendererGL21::UpdateMesh(int indx, std::shared_ptr<Mesh> msh){
+	meshes[indx] = msh;
+	return true;
+}
+
 bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	runtime = r;
 	cam     = c;
@@ -397,16 +402,25 @@ void Renderer::RendererGL21::RenderFrame() {
 	glLoadMatrixf(glm::value_ptr(view));
 
 	// draw meshes
-	glBegin(GL_TRIANGLES);
-	  for (const auto& mesh : meshes) {
+	for (const auto& mesh : meshes) {
+		glPushMatrix();
+		glTranslatef(mesh->transform.position.x, mesh->transform.position.y, mesh->transform.position.z);
+		
+		glRotatef(mesh->transform.rotation.y, 0.0f, 1.0f, 0.0f); // Yaw (Y-axis)
+		glRotatef(mesh->transform.rotation.x, 1.0f, 0.0f, 0.0f); // Pitch (X-axis)
+		glRotatef(mesh->transform.rotation.z, 0.0f, 0.0f, 1.0f); // Roll (Z-axis)
+		
+		glBegin(GL_TRIANGLES);
+		
 		for (const auto& v : mesh->vertices) {
 		  glNormal3f(v.normal.x, v.normal.y, v.normal.z);
-		  glVertex3f(v.position.x + mesh->position.x,
-					 v.position.y + mesh->position.y,
-					 v.position.z + mesh->position.z);
+		  glVertex3f(v.position.x, v.position.y, v.position.z);
 		}
-	  }
-	glEnd();
+		
+		glEnd();
+		
+		glPopMatrix();
+	}
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();

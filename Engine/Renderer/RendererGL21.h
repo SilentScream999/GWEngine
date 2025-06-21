@@ -12,6 +12,7 @@ namespace Renderer {
 		bool Init(Camera *cam, Runtime::Runtime *runtime) override;
 		void RenderFrame() override;
 		bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) override;
+		bool UpdateMesh(int indx, std::shared_ptr<Mesh> msh) override;
 		
 		ImageData CaptureFrame() override;
 		void setSize(int newWidth, int newHeight);

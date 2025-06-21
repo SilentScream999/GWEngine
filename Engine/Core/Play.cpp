@@ -4,14 +4,12 @@
 
 bool Runtime::PlayRuntime::Init() {
 	// Load meshes
-	std::vector<std::shared_ptr<Mesh>> meshes;
-
 	auto mesh1 = std::make_shared<Mesh>();
 	if (!mesh1->LoadFromOBJ("assets/models/test2.obj")) {
 		Logger::Error("Failed to load OBJ test2.obj");
 		return false;
 	}
-	mesh1->position = glm::vec3(0.0f, 0.0f, 0.0f);
+	mesh1->transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	meshes.push_back(mesh1);
 
 	auto mesh2 = std::make_shared<Mesh>();
@@ -19,7 +17,7 @@ bool Runtime::PlayRuntime::Init() {
 		Logger::Error("Failed to load OBJ test.obj");
 		return false;
 	}
-	mesh2->position = glm::vec3(1.0f, 1.0f, 1.0f);
+	mesh2->transform.position = glm::vec3(1.0f, 1.0f, 1.0f);
 	meshes.push_back(mesh2);
 	
 	Renderer::RendererManager::SetMeshes(meshes);
@@ -28,7 +26,11 @@ bool Runtime::PlayRuntime::Init() {
 }
 
 void Runtime::PlayRuntime::PrepareForFrameRender() {
-	// nothing to do here I spose? for now
+	// right here we are testing just messing with the positioning and rotation of the meshes.
+	
+	meshes[0]->transform.TranslateBy(glm::vec3(0, 0.01, 0));
+	meshes[1]->transform.RotateBy(glm::vec3(0, 0.1, 0.01));
+	Renderer::RendererManager::UpdateMesh(0, meshes[0]);
 }
 
 void Runtime::PlayRuntime::Cleanup() {

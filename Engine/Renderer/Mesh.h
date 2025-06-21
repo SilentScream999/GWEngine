@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Transform.h"
 #include <vector>
 #include <string>
 #include <cstdint>
@@ -20,7 +21,7 @@ public:
 
 	std::vector<Vertex>      vertices;
 	std::vector<uint32_t>    indices;
-	glm::vec3                position;
+	Transform                transform;
 
 	bool LoadFromOBJ(const std::string& path);
 };

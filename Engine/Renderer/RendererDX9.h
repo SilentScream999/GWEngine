@@ -10,11 +10,24 @@
 
 namespace Renderer {
 
+struct DX9MeshData {
+	IDirect3DVertexBuffer9* vertexBuffer = nullptr;
+	IDirect3DIndexBuffer9* indexBuffer = nullptr;
+	int vertexCount = 0;
+	int triangleCount = 0;
+	
+	~DX9MeshData() {
+		if (vertexBuffer) vertexBuffer->Release();
+		if (indexBuffer) indexBuffer->Release();
+	}
+};
+
 class RendererDX9 : public IRenderer {
 public:
 	bool Init(Camera *cam, Runtime::Runtime *runtime) override;
 	void RenderFrame() override;
 	bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) override;
+	bool UpdateMesh(int indx, std::shared_ptr<Mesh> msh) override;
 	bool KeyIsDown(int key);
 	ImageData CaptureFrame() override;
 	void setSize(int newWidth, int newHeight) override;
@@ -29,6 +42,7 @@ private:
 	UINT                               height     = 600;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
+	std::vector<DX9MeshData> meshBuffers;
 	UINT                               numberOfMeshVertexes = 0;
 	LPDIRECT3DVERTEXBUFFER9            vb         = nullptr;
 	LPDIRECT3DINDEXBUFFER9             ib         = nullptr;

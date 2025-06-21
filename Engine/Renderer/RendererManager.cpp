@@ -82,6 +82,24 @@ namespace Renderer {
 			return false;
 		}
 	}
+	
+	bool RendererManager::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
+		if (rendererDX9) {
+			if (rendererDX9->UpdateMesh(indx, mesh)) {
+				return true;
+			} else {
+				return false;
+			}
+		}else if (rendererGL) {
+			if (rendererGL->UpdateMesh(indx, mesh)) {
+				return true;
+			} else {
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
 
 	void RendererManager::RenderFrame() {
 		cam->updateForFrame();
