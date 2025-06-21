@@ -1,7 +1,9 @@
--Work on editor
+- Work on editor
 
--Skybox
+- Skybox
 
--Fix DX9 lag
+- Fix DX9 lag
 
--Better loading
+- Better loading (OGL & DX9)
+
+- Invisible window, asset tab, tab stretch, Drag bars
