@@ -57,6 +57,10 @@ private:
 	void ResetDevice();
 	void HandleInputDX9(float dt);
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	
+	float skybox_r = 0.0;
+	float skybox_g = 0.0;
+	float skybox_b = 0.0;
 };
 
 // Vertex format matching your Mesh::Vertex

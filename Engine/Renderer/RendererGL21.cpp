@@ -31,6 +31,7 @@ static void FramebufferSizeCallback(GLFWwindow* wnd, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
+
 // Simple skybox cube vertices (positions only, we'll use them as texture coords)
 // Skybox vertices with UV coordinates (x, y, z, u, v)
 // The numbers here have been adjusted to ensure they fit the texture
@@ -153,14 +154,14 @@ static unsigned char* LoadBMP(const char* filename, int* width, int* height) {
 			imageData[dstIndex + 2] = bmpData[srcIndex + 0]; // B
 		}
 	}
-
+	
 	delete[] bmpData;
 	fclose(file);
 	return imageData;
 }
 
 // Load skybox texture from bitmap file
-static void CreateSkyboxTexture(const char* filename) {
+void Renderer::RendererGL21::CreateSkyboxTexture(const char* filename) {
 	int width, height;
 	unsigned char* data = LoadBMP(filename, &width, &height);
 	
@@ -189,7 +190,50 @@ static void CreateSkyboxTexture(const char* filename) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
+	
+	
+	// sample colors from the skybox for lighting
+	
+	float xPoints[12] = {
+		// horizontals
+		0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+		// top - no bottom
+		0.38
+	};
+	float yPoints[12] = {
+		// horizontals
+		0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+		// top - no bottom
+		0.17
+	};
+	
+	float totalr = 0.0;
+	float totalg = 0.0;
+	float totalb = 0.0;
+	
+	float totalstrength = 0.0;
+	
+	for (int i = 0; i < 12; i++) {
+		float x = xPoints[i];
+		float y = yPoints[i];
+	
+		float strength = (1.0-y)*(1.0-y);
+		totalstrength += strength;
+	
+		// Convert UV to pixel coordinates
+		int pixelX = (int)(x * (width - 1));
+		int pixelY = (int)(y * (height - 1));
+		int srcIndex = (pixelY * width + pixelX) * 3;
+		
+		totalr += data[srcIndex] * strength;
+		totalg += data[srcIndex+1] * strength;
+		totalb += data[srcIndex+2] * strength;
+	}
+	
+	skybox_r = (totalr/totalstrength)/255.0f;
+	skybox_g = (totalg/totalstrength)/255.0f;
+	skybox_b = (totalb/totalstrength)/255.0f;
+	
 	delete[] data;
 }
 
@@ -295,18 +339,22 @@ bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	glEnable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
 
-	GLfloat globalAmbient[4] = {0,0,0,1};
+	// Create skybox texture
+	CreateSkyboxTexture("assets/textures/skybox.bmp");
+	// That has to happen before we assign the ambients
+
+	GLfloat globalAmbient[4] = {1,1,1,1};
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
-	GLfloat lightAmb[4] = {1,1,1,1};
+	GLfloat lightAmb[4] = {0,0,0,1};
 	GLfloat lightDif[4] = {1,1,1,1};
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmb);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);
 
-	GLfloat lightDir[4] = {-1,-1,-1,0};
+	GLfloat lightDir[4] = {0,1,0,0};
 	glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
 
-	GLfloat matAmb[4] = {0.1f,0.1f,0.1f,1.0f};
+	GLfloat matAmb[4] = {skybox_r*.5f, skybox_g*.5f, skybox_b*.5f, 1.0f};
 	GLfloat matDif[4] = {1,1,1,1};
 	glMaterialfv(GL_FRONT, GL_AMBIENT, matAmb);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, matDif);
@@ -315,9 +363,6 @@ bool Renderer::RendererGL21::Init(Camera* c, Runtime::Runtime *r) {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwMouseCaptured = true;
 	leftWasDown       = false;
-
-	// Create skybox texture
-	CreateSkyboxTexture("assets/textures/skybox.bmp");
 
 	lastTime = glfwGetTime();
 	Logger::Info("GLFW window, context, lighting, skybox, and MSAA initialized.");
@@ -399,7 +444,7 @@ void Renderer::RendererGL21::RenderFrame() {
 	glLoadMatrixf(glm::value_ptr(proj));
 
 	// reset light direction each frame
-	GLfloat lightDirFrame[4] = {-1.0f, -1.0f, -1.0f, 0.0f};
+	GLfloat lightDirFrame[4] = {0.0f, 1.0f, 0.0f, 0.0f};
 	glLightfv(GL_LIGHT0, GL_POSITION, lightDirFrame);
 
 	// camera/view

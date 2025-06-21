@@ -19,7 +19,6 @@ using namespace Renderer;
 static float g_rawMouseX = 0.0f;
 static float g_rawMouseY = 0.0f;
 
-
 unsigned char* LoadImageFromFile(const char* filename, int* width, int* height, int* channels) {
 	return stbi_load(filename, width, height, channels, 0);
 }
@@ -27,57 +26,6 @@ unsigned char* LoadImageFromFile(const char* filename, int* width, int* height, 
 void FreeImageData(unsigned char* data) {
 	stbi_image_free(data);
 }
-
-// Alternative: Simple BMP loader (if you only need BMP support)
-struct BMPHeader {
-	uint16_t type;
-	uint32_t size;
-	uint16_t reserved1;
-	uint16_t reserved2;
-	uint32_t offset;
-	uint32_t headerSize;
-	int32_t width;
-	int32_t height;
-	uint16_t planes;
-	uint16_t bitsPerPixel;
-	uint32_t compression;
-	uint32_t imageSize;
-	int32_t xPixelsPerMeter;
-	int32_t yPixelsPerMeter;
-	uint32_t colorsUsed;
-	uint32_t colorsImportant;
-};
-
-unsigned char* LoadBMPFile(const char* filename, int* width, int* height) {
-	FILE* file = fopen(filename, "rb");
-	if (!file) return nullptr;
-	
-	BMPHeader header;
-	fread(&header, sizeof(BMPHeader), 1, file);
-	
-	if (header.type != 0x4D42 || header.bitsPerPixel != 24) {
-		fclose(file);
-		return nullptr;
-	}
-	
-	*width = header.width;
-	*height = abs(header.height);
-	
-	fseek(file, header.offset, SEEK_SET);
-	
-	int imageSize = (*width) * (*height) * 3;
-	unsigned char* data = new unsigned char[imageSize];
-	fread(data, 1, imageSize, file);
-	fclose(file);
-	
-	// Convert BGR to RGB
-	for (int i = 0; i < imageSize; i += 3) {
-		std::swap(data[i], data[i + 2]);
-	}
-	
-	return data;
-}
-
 
 
 struct SkyboxVertex {
@@ -442,6 +390,48 @@ bool RendererDX9::Init(Camera* c, Runtime::Runtime *r) {
 		skyboxTexture->UnlockRect(0);
 	}
 	
+	// sample colors from the skybox for lighting
+	
+	float xPoints[12] = {
+		// horizontals
+		0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+		// top - no bottom
+		0.38
+	};
+	float yPoints[12] = {
+		// horizontals
+		0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+		// top - no bottom
+		0.17
+	};
+	
+	float totalr = 0.0;
+	float totalg = 0.0;
+	float totalb = 0.0;
+	
+	float totalstrength = 0.0;
+	
+	for (int i = 0; i < 12; i++) {
+		float x = xPoints[i];
+		float y = yPoints[i];
+	
+		float strength = (1.0-y)*(1.0-y);
+		totalstrength += strength;
+	
+		// Convert UV to pixel coordinates
+		int pixelX = (int)(x * (width - 1));
+		int pixelY = (int)(y * (height - 1));
+		int srcIndex = (pixelY * width + pixelX) * channels;
+		
+		totalr += imageData[srcIndex] * strength;
+		totalg += imageData[srcIndex+1] * strength;
+		totalb += imageData[srcIndex+2] * strength;
+	}
+	
+	skybox_r = (totalr/totalstrength)/255.0f;
+	skybox_g = (totalg/totalstrength)/255.0f;
+	skybox_b = (totalb/totalstrength)/255.0f;
+	
 	FreeImageData(imageData);
 	
 	Logger::Info("Skybox initialized successfully");
@@ -711,8 +701,12 @@ void RendererDX9::RenderFrame() {
 
 	// material + lighting
 	D3DMATERIAL9 mat = {};
-	mat.Diffuse.r = mat.Diffuse.g = mat.Diffuse.b = 1.0f;
-	mat.Ambient.r = mat.Ambient.g = mat.Ambient.b = 0.1f;
+	mat.Diffuse.r = mat.Diffuse.g = mat.Diffuse.b = 1.0f; // this is the color of the object
+	
+	mat.Ambient.r = skybox_r*.5f;
+	mat.Ambient.g = skybox_g*.5f;
+	mat.Ambient.b = skybox_b*.5f;
+	
 	mat.Diffuse.a = mat.Ambient.a = 1.0f;
 	d3dDevice->SetMaterial(&mat);
 
@@ -720,7 +714,7 @@ void RendererDX9::RenderFrame() {
 	light.Type      = D3DLIGHT_DIRECTIONAL;
 	light.Diffuse.r = light.Diffuse.g = light.Diffuse.b = 1.0f;
 	light.Ambient.r = light.Ambient.g = light.Ambient.b = 1.0f;
-	light.Direction = {1.0f, 1.0f, 1.0f};
+	light.Direction = {0.0f, -1.0f, 0.0f}; // straight down
 	d3dDevice->SetLight(0, &light);
 	d3dDevice->LightEnable(0, TRUE);
 	d3dDevice->SetRenderState(D3DRS_LIGHTING, TRUE);

@@ -18,5 +18,10 @@ namespace Renderer {
 	private:
 		std::vector<std::shared_ptr<Mesh>> meshes;
 		Runtime::Runtime*                  runtime;
+		void CreateSkyboxTexture(const char* filename);
+		
+		float skybox_r = 0.0;
+		float skybox_g = 0.0;
+		float skybox_b = 0.0;
 	};
 }
