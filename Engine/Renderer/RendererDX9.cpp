@@ -471,6 +471,19 @@ void RendererDX9::ResetDevice() {
 	d3dDevice->SetViewport(&vp);
 }
 
+int RendererDX9::AddMesh(std::shared_ptr<Mesh> mesh) {
+	for (int i = 0; i < meshes.size(); i++) {
+		if (!meshes[i]) {
+			UpdateMesh(i, mesh);
+			return i;
+		}
+	}
+	
+	int indx = meshes.size();
+	UpdateMesh(indx, mesh);
+	return indx;
+}
+
 bool RendererDX9::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
 	// Ensure the vectors are large enough
 	if (indx >= meshes.size()) {
@@ -572,6 +585,30 @@ bool RendererDX9::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
 	
 	return true;
 }
+
+bool RendererDX9::DeleteMesh(int indx) {
+	// Check if index is valid
+	if (indx < 0 || indx >= meshBuffers.size()) {
+		Logger::Error("Invalid mesh index for deletion");
+		return false;
+	}
+	
+	// Get reference to the mesh data
+	DX9MeshData& meshData = meshBuffers[indx];
+	
+	// Release buffers
+	if (meshData.vertexBuffer) {
+		meshData.vertexBuffer->Release();
+	}
+	if (meshData.indexBuffer) {
+		meshData.indexBuffer->Release();
+	}
+	
+	meshes[indx] = nullptr;
+	
+	return true;
+}
+	
 
 //------------------------------------------------------------------------
 bool RendererDX9::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
@@ -773,6 +810,11 @@ void RendererDX9::RenderFrame() {
 	
 	for (size_t i = 0; i < meshes.size() && i < meshBuffers.size(); i++) {
 		const auto& mesh = meshes[i];
+		
+		if (!mesh) {
+			continue;
+		}
+		
 		const auto& meshData = meshBuffers[i];
 		
 		// Set this mesh's buffers

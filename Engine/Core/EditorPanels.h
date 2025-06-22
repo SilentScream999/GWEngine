@@ -1,6 +1,8 @@
 // EditorPanels.h
 #pragma once
 
+#include "Core/Editor.h"
+
 // Forward declare Nuklear image struct
 struct nk_image;
 
@@ -16,7 +18,7 @@ void DrawImageView(struct nk_image img, int drag_x, int menu_height, int top_h);
 void DrawAssetBrowser(int drag_x, int drag_y, int win_h);
 
 /// Renders the sidebar panel on the right
-void DrawHierarchy(int side_x, int side_w, int menu_height, int sidebar_h);
+void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int menu_height, int sidebar_h);
 
 /// Renders the properties panel below the sidebar
 void DrawProperties(int side_x, int sidebar_h, int menu_height, int side_w, int prop_h);

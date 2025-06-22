@@ -23,6 +23,8 @@ namespace Renderer {
 		static void Shutdown();
 		static bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh);
 		static bool UpdateMesh(int indx, std::shared_ptr<Mesh> msh);
+		static bool DeleteMesh(int indx);
+		static int AddMesh(std::shared_ptr<Mesh> mesh);
 
 		static Camera*           cam;
 		

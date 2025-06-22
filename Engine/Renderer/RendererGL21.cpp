@@ -213,7 +213,32 @@ bool Renderer::RendererGL21::SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) {
 }
 
 bool Renderer::RendererGL21::UpdateMesh(int indx, std::shared_ptr<Mesh> msh){
+	if (indx >= meshes.size()) {
+		meshes.resize(indx+1);
+	}
 	meshes[indx] = msh;
+	return true;
+}
+
+int Renderer::RendererGL21::AddMesh(std::shared_ptr<Mesh> mesh) {
+	for (int i = 0; i < meshes.size(); i++) {
+		if (!meshes[i]) {
+			UpdateMesh(i, mesh);
+			return i;
+		}
+	}
+	
+	int indx = meshes.size();
+	UpdateMesh(indx, mesh);
+	return indx;
+}
+
+bool Renderer::RendererGL21::DeleteMesh(int indx) {
+	if (indx < 0 || indx >= meshes.size()) {
+		return false;
+	}
+	
+	meshes[indx] = nullptr;
 	return true;
 }
 
@@ -403,6 +428,10 @@ void Renderer::RendererGL21::RenderFrame() {
 
 	// draw meshes
 	for (const auto& mesh : meshes) {
+		if (!mesh) {
+			continue;
+		}
+		
 		glPushMatrix();
 		glTranslatef(mesh->transform.position.x, mesh->transform.position.y, mesh->transform.position.z);
 		

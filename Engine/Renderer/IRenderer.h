@@ -19,6 +19,9 @@ namespace Renderer {
 		virtual ~IRenderer() = default;
 		virtual bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) = 0;
 		virtual bool UpdateMesh(int indx, std::shared_ptr<Mesh> msh) = 0;
+		virtual bool DeleteMesh(int indx) = 0;
+		virtual int AddMesh(std::shared_ptr<Mesh> mesh) = 0;
+	
 		virtual ImageData CaptureFrame() = 0;
 		virtual void setSize(int newWidth, int newHeight) = 0;
 		

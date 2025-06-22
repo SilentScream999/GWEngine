@@ -15,7 +15,10 @@ namespace Runtime {
 		
 		virtual void ProcessInput(GLFWwindow* window, float deltaTime) override;
 		virtual void ProcessInput(float xpos, float ypos, std::function<bool(int)> KeyIsDown, float deltaTime) override;
-	private:
+		
+		int AddMesh(std::string filepath, glm::vec3 pos = glm::vec3(0, 0, 0), glm::vec3 rot = glm::vec3(0, 0, 0));
+		bool DeleteMesh(int meshindex);
+		
 		std::vector<std::shared_ptr<Mesh>> meshes; // might as well? IDK
 	};
 }

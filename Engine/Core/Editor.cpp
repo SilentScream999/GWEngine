@@ -32,26 +32,40 @@ static SDL_Window   *win      = nullptr;
 static SDL_Renderer *renderer = nullptr;
 nk_context   *ctx      = nullptr;
 
+bool Runtime::EditorRuntime::DeleteMesh(int meshindex) {
+	if (meshindex < 0 || meshindex >= meshes.size()) {
+		return false;
+	}
+	
+	meshes[meshindex] = nullptr;
+	
+	return Renderer::RendererManager::DeleteMesh(meshindex);
+}
+
+int Runtime::EditorRuntime::AddMesh(std::string filepath, glm::vec3 pos, glm::vec3 rot) {
+	auto mesh = std::make_shared<Mesh>();
+	if (!mesh->LoadFromOBJ(filepath)) {
+		return -1;
+	}
+	mesh->transform.position = pos;
+	mesh->transform.position = rot;
+	
+	int indx = Renderer::RendererManager::AddMesh(mesh);
+	
+	if (indx >= meshes.size()) {
+		meshes.resize(indx+1);
+	}
+	
+	meshes[indx] = mesh;
+	
+	return indx;
+}
+
 // Initialization
 bool Runtime::EditorRuntime::Init() {
-	std::vector<std::shared_ptr<Mesh>> meshes;
-	auto mesh1 = std::make_shared<Mesh>();
-	if (!mesh1->LoadFromOBJ("assets/models/test2.obj")) {
-		Logger::Error("Failed to load OBJ test2.obj");
-		return false;
-	}
-	mesh1->transform.position = glm::vec3(0.0f);
-	meshes.push_back(mesh1);
-
-	auto mesh2 = std::make_shared<Mesh>();
-	if (!mesh2->LoadFromOBJ("assets/models/test.obj")) {
-		Logger::Error("Failed to load OBJ test.obj");
-		return false;
-	}
-	mesh2->transform.position = glm::vec3(1.0f);
-	meshes.push_back(mesh2);
-
-	Renderer::RendererManager::SetMeshes(meshes);
+	int gridIndex = AddMesh("assets/models/grid.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0));
+//	int meshIndex2 = AddMesh("assets/models/test2.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), false);
+//	int meshIndex3 = AddMesh("assets/models/test.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), false); // we don't feel like adding it now because we're going to push them all in a moment
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		Logger::Error(std::string("SDL_Init failed: ") + SDL_GetError());
@@ -223,14 +237,17 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	EditorPanels::DrawImageView(nk_img, drag_x, menu_height, top_h);
 	EditorPanels::DrawAssetBrowser(drag_x, drag_y, win_h);
 	SDL_SetRenderDrawColor(renderer,100,100,100,255);
-	SDL_RenderFillRect(renderer, &SDL_Rect{drag_x-1,menu_height,2,content_h});
-	SDL_RenderFillRect(renderer, &SDL_Rect{0,drag_y-1,drag_x,2});
+	auto a = SDL_Rect{drag_x-1,menu_height,2,content_h};
+	SDL_RenderFillRect(renderer, &a);
+	auto b = SDL_Rect{0,drag_y-1,drag_x,2};
+	SDL_RenderFillRect(renderer, &b);
 	int side_x = drag_x, side_w = win_w-drag_x;
 	int Hierarchy_h = right_split_y-menu_height;
 	int prop_h = content_h - Hierarchy_h;
-	EditorPanels::DrawHierarchy(side_x,side_w,menu_height,Hierarchy_h);
+	EditorPanels::DrawHierarchy(this,side_x,side_w,menu_height,Hierarchy_h);
 	EditorPanels::DrawProperties(side_x,Hierarchy_h,menu_height,side_w,prop_h);
-	SDL_RenderFillRect(renderer, &SDL_Rect{drag_x,right_split_y-1,side_w,2});
+	auto c = SDL_Rect{drag_x,right_split_y-1,side_w,2};
+	SDL_RenderFillRect(renderer, &c);
 	nk_sdl_render(NK_ANTI_ALIASING_ON);
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(texture);

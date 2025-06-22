@@ -13,6 +13,8 @@ namespace Renderer {
 		void RenderFrame() override;
 		bool SetMeshes(std::vector<std::shared_ptr<Mesh>> msh) override;
 		bool UpdateMesh(int indx, std::shared_ptr<Mesh> msh) override;
+		bool DeleteMesh(int indx) override;
+		int AddMesh(std::shared_ptr<Mesh> mesh) override;
 		
 		ImageData CaptureFrame() override;
 		void setSize(int newWidth, int newHeight);

@@ -84,6 +84,7 @@ namespace Renderer {
 	}
 	
 	bool RendererManager::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
+		printf("Updated mesh\n");
 		if (rendererDX9) {
 			if (rendererDX9->UpdateMesh(indx, mesh)) {
 				return true;
@@ -98,6 +99,34 @@ namespace Renderer {
 			}
 		}else{
 			return false;
+		}
+	}
+	
+	bool RendererManager::DeleteMesh(int indx) {
+		if (rendererDX9) {
+			if (rendererDX9->DeleteMesh(indx)) {
+				return true;
+			} else {
+				return false;
+			}
+		}else if (rendererGL) {
+			if (rendererGL->DeleteMesh(indx)) {
+				return true;
+			} else {
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
+	
+	int RendererManager::AddMesh(std::shared_ptr<Mesh> mesh) {
+		if (rendererDX9) {
+			return rendererDX9->AddMesh(mesh);
+		}else if (rendererGL) {
+			return rendererGL->AddMesh(mesh);
+		}else{
+			return -1;
 		}
 	}
 
