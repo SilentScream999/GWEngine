@@ -4,6 +4,9 @@
 #include "../Core/Logger.h"
 #include <GLFW/glfw3.h>
 #include <GL/gl.h>
+#ifndef PI
+  #define PI 3.14159265358979323846f
+#endif
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,6 +33,125 @@ static void FramebufferSizeCallback(GLFWwindow* wnd, int width, int height) {
 	winWidth  = width;
 	winHeight = height;
 	glViewport(0, 0, width, height);
+}
+
+// -----------------------------------------------------------------------------
+// at top of RendererGL21.cpp, after your #includes:
+// -----------------------------------------------------------------------------
+
+// tesselation detail
+static const int ARROW_SEGMENTS = 16;
+
+// draw a unit cylinder along +Z from z=0..1, radius=1
+static void DrawUnitCylinder()
+{
+    for(int i = 0; i < ARROW_SEGMENTS; ++i) {
+        float a0 = 2.0f * PI * (float)i       / ARROW_SEGMENTS;
+        float a1 = 2.0f * PI * (float)(i + 1) / ARROW_SEGMENTS;
+        float x0 = cosf(a0), y0 = sinf(a0);
+        float x1 = cosf(a1), y1 = sinf(a1);
+        // side quad (two triangles):
+        glBegin(GL_TRIANGLES);
+          // first tri
+          glNormal3f(x0, y0, 0);
+          glVertex3f(x0, y0, 0);
+          glVertex3f(x0, y0, 1);
+          glVertex3f(x1, y1, 1);
+          // second tri
+          glNormal3f(x0, y0, 0);
+          glVertex3f(x0, y0, 0);
+          glVertex3f(x1, y1, 1);
+          glVertex3f(x1, y1, 0);
+        glEnd();
+    }
+}
+
+// draw a unit cone along +Z from z=0..1, base radius=1 at z=0, tip at z=1
+static void DrawUnitCone()
+{
+    glm::vec3 tip(0,0,1.0f);
+    for(int i = 0; i < ARROW_SEGMENTS; ++i) {
+        float a0 = 2.0f * PI * (float)i       / ARROW_SEGMENTS;
+        float a1 = 2.0f * PI * (float)(i + 1) / ARROW_SEGMENTS;
+        float x0 = cosf(a0), y0 = sinf(a0);
+        float x1 = cosf(a1), y1 = sinf(a1);
+        // single triangle per segment
+        // compute normals by cross-product:
+        glm::vec3 p0(x0, y0, 0.0f), p1(x1, y1, 0.0f);
+        glm::vec3 edge0 = p0 - tip;
+        glm::vec3 edge1 = p1 - tip;
+        glm::vec3 n = glm::normalize(glm::cross(edge1, edge0));
+        glBegin(GL_TRIANGLES);
+          glNormal3f(n.x, n.y, n.z);
+          glVertex3f(p0.x, p0.y, p0.z);
+          glVertex3f(p1.x, p1.y, p1.z);
+          glVertex3f(tip.x, tip.y, tip.z);
+        glEnd();
+    }
+}
+
+// draw an arrow at origin, pointing along +Z.
+//  shaftLength = total length - headLength
+//  shaftRadius, headRadius, headLength in same units.
+static void DrawUnitArrow(float shaftRadius, float headRadius, float headLength, float totalLength)
+{
+    float shaftLength = totalLength - headLength;
+
+    // --- draw shaft ---
+    glPushMatrix();
+      // scale X/Y by radius, Z by length
+      glScalef(shaftRadius, shaftRadius, shaftLength);
+      DrawUnitCylinder();
+    glPopMatrix();
+
+    // --- draw head ---
+    glPushMatrix();
+      // translate to end of shaft
+      glTranslatef(0, 0, shaftLength);
+      // scale X/Y by headRadius, Z by headLength
+      glScalef(headRadius, headRadius, headLength);
+      DrawUnitCone();
+    glPopMatrix();
+}
+
+// orient & draw arrow from 'start' in 'dir' direction
+static void DrawArrow(const glm::vec3& start, 
+                      const glm::vec3& dir, 
+                      float shaftRadius, 
+                      float headRadius, 
+                      float headLength)
+{
+    float totalLength = glm::length(dir);
+    if (totalLength < 1e-6f) return;
+
+    // compute rotation: align local +Z to dir
+    glm::vec3 axis = glm::cross(glm::vec3(0,0,1), dir);
+    float angle = acosf(glm::dot(glm::normalize(dir), glm::vec3(0,0,1)));
+    
+    glPushMatrix();
+      glTranslatef(start.x, start.y, start.z);
+      if (glm::length(axis) > 1e-6f)
+        glRotatef(glm::degrees(angle), axis.x, axis.y, axis.z);
+      // draw the unit arrow along +Z
+      DrawUnitArrow(shaftRadius, headRadius, headLength, totalLength);
+    glPopMatrix();
+}
+
+// helper: draw X/Y/Z arrows at mesh origin
+static void DrawArrowGizmos(const glm::vec3& origin, float scale=1.0f)
+{
+    float shaftR = 0.02f * scale;
+    float headR  = 0.06f * scale;
+    float headL  = 0.2f  * scale;
+    // X = red
+    glColor3f(1,0,0);
+    DrawArrow(origin, glm::vec3(scale,0,0), shaftR, headR, headL);
+    // Y = green
+    glColor3f(0,1,0);
+    DrawArrow(origin, glm::vec3(0,scale,0), shaftR, headR, headL);
+    // Z = blue
+    glColor3f(0,0,1);
+    DrawArrow(origin, glm::vec3(0,0,scale), shaftR, headR, headL);
 }
 
 
@@ -449,8 +571,27 @@ void Renderer::RendererGL21::RenderFrame() {
 		glEnd();
 		
 		glPopMatrix();
-	}
 
+		// Only draw arrows if we're in the Editor
+		if (dynamic_cast<Runtime::EditorRuntime*>(runtime)) {
+			// save all the GL state we'll tweak
+			glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+
+			// turn off depth testing & depth writes so arrows always win
+			glDisable(GL_DEPTH_TEST);
+			glDepthMask(GL_FALSE);
+
+			// keep them bright & double-sided
+			glDisable(GL_LIGHTING);
+			glDisable(GL_CULL_FACE);
+
+			// draw our colored axis arrows at the mesh origin
+			DrawArrowGizmos(mesh->transform.position, /*scale=*/0.5f);
+
+			// restore everything exactly as it was
+			glPopAttrib();
+		}
+	}
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 }

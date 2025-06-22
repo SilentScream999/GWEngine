@@ -84,7 +84,7 @@ namespace Renderer {
 	}
 	
 	bool RendererManager::UpdateMesh(int indx, std::shared_ptr<Mesh> mesh) {
-		printf("Updated mesh\n");
+		// printf("Updated mesh\n");
 		if (rendererDX9) {
 			if (rendererDX9->UpdateMesh(indx, mesh)) {
 				return true;
