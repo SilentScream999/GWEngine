@@ -487,8 +487,11 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 	}
 	nk_end(ctx);
 	
+	
 	selected_item = selectedIndex;
 	end_selection = selected_item+1;
+
+	if (selected_item < 0 || selected_item >= (int)entityLevels.size()) return;
 	
 	while (end_selection < (int)entityNames.size() && entityLevels[end_selection] > entityLevels[selected_item]) {
 		end_selection++;
