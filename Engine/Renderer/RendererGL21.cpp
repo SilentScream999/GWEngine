@@ -15,6 +15,8 @@
 #include "Mesh.h"
 #include "../Core/stb_impl.h"
 
+#include "../Core/EditorPanels.h"
+
 // globals for our window and state
 static GLFWwindow* window      = nullptr;
 static int        winWidth     = 800;
@@ -548,8 +550,12 @@ void Renderer::RendererGL21::RenderFrame() {
 	// Restore full view matrix for regular geometry
 	glLoadMatrixf(glm::value_ptr(view));
 
+	int selectedMesh = EditorPanels::GetSelectedMeshIndex();
+
 	// draw meshes
-	for (const auto& mesh : meshes) {
+	for (size_t i = 0; i < meshes.size(); ++i) {
+    const auto& mesh = meshes[i];
+
 		if (!mesh) {
 			continue;
 		}
@@ -573,24 +579,21 @@ void Renderer::RendererGL21::RenderFrame() {
 		glPopMatrix();
 
 		// Only draw arrows if we're in the Editor
-		if (dynamic_cast<Runtime::EditorRuntime*>(runtime)) {
-			// save all the GL state we'll tweak
-			glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+		if (dynamic_cast<Runtime::EditorRuntime*>(runtime) != nullptr
+            && i == selectedMesh)
+        {
+            // save GL state
+            glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
+            glDisable(GL_LIGHTING);
+            glDisable(GL_CULL_FACE);
 
-			// turn off depth testing & depth writes so arrows always win
-			glDisable(GL_DEPTH_TEST);
-			glDepthMask(GL_FALSE);
+            DrawArrowGizmos(mesh->transform.position, /*scale=*/0.5f);
 
-			// keep them bright & double-sided
-			glDisable(GL_LIGHTING);
-			glDisable(GL_CULL_FACE);
-
-			// draw our colored axis arrows at the mesh origin
-			DrawArrowGizmos(mesh->transform.position, /*scale=*/0.5f);
-
-			// restore everything exactly as it was
-			glPopAttrib();
-		}
+            // restore
+            glPopAttrib();
+        }
 	}
 	glfwSwapBuffers(window);
 	glfwPollEvents();

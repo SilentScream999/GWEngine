@@ -13,6 +13,10 @@ extern SDL_Renderer* renderer;
 int selected_item = 0;
 int end_selection = 0;
 
+extern int selected_item;
+extern int end_selection;
+extern std::vector<int> entityIndexes;
+
 namespace EditorPanels {
 
 void DrawTopMenu(int win_w, int menu_height) {
@@ -497,7 +501,6 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 		end_selection++;
 	}
 }
-
 void DrawProperties(Runtime::EditorRuntime *editor, int side_x, int sidebar_h, int menu_height, int side_w, int prop_h) {
 	struct nk_rect prop_rect = nk_rect((float)side_x, (float)(menu_height + sidebar_h), (float)side_w, (float)prop_h);
 	
@@ -600,6 +603,22 @@ void DrawProperties(Runtime::EditorRuntime *editor, int side_x, int sidebar_h, i
 		}
 	}
 	nk_end(ctx);
+}
+
+int GetSelectedMeshIndex() {
+    if (selected_item < 0 || selected_item >= (int)entityIndexes.size())
+        return -1;
+    return entityIndexes[selected_item];
+}
+
+std::vector<int> GetSelectedMeshSubtreeIndices() {
+    std::vector<int> out;
+    if (selected_item < 0 || selected_item >= (int)entityIndexes.size())
+        return out;
+    for (int i = selected_item; i < end_selection && i < (int)entityIndexes.size(); ++i) {
+        out.push_back(entityIndexes[i]);
+    }
+    return out;
 }
 
 } // namespace EditorPanels
