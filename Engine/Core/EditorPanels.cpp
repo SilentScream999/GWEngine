@@ -1,4 +1,3 @@
-
 #include "EditorPanels.h"
 #include "Core/Editor.h"
 #include "Renderer/RendererManager.h"
