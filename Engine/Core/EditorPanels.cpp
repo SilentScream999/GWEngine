@@ -127,19 +127,39 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 	static bool dragging = false;
 	static struct nk_vec2 dragStartPos = {0,0};
 
+	// Base reference width to compare against (tweak as needed)
+	const float base_width = 300.0f;
+	float ui_scale = side_w / base_width;
+	if (ui_scale < 0.90f) ui_scale = 0.90f; // Minimum 75% (25% reduction max)
+	if (ui_scale > 1.3f) ui_scale = 1.3f; // optional clamp
+
+	// Scale text and font-related measurements
+	const float base_font_size = 13.0f; // Adjust this to your default font size
+	float scaled_font_height = base_font_size * ui_scale;
+
+	// Get a non-const pointer to the font to modify its height
+	struct nk_user_font *font = (struct nk_user_font*)ctx->style.font;
+	float original_font_height = font->height;
+	
+	// Scale the font size
+	font->height = scaled_font_height;
+
 	if (nk_begin(ctx, "Hierarchy", side_rect, NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
 		std::vector<struct nk_rect> occupiedRects;
 
-		// ── Header: "Hierarchy" + "+" + "Delete" as fixed small square buttons ─────
-		const float btn_size = 20.0f;
-		const float padding = 4.0f; // spacing between elements
+		 // ── Header: "Hierarchy" + "+" + "Delete" as fixed small square buttons with centered symbols ─────
+		const float btn_size = 20.0f * ui_scale;
+		const float padding = 4.0f * ui_scale;
+
+		// Scale the header height based on font size
+		float header_height = std::max(btn_size, scaled_font_height + padding);
 
 		// Begin a static row: 3 columns: label + plus + delete
-		nk_layout_row_begin(ctx, NK_STATIC, btn_size, 3);
+		nk_layout_row_begin(ctx, NK_STATIC, header_height, 3);
 
 		// 1) Label: calculate width to leave room for both buttons plus more padding
-		float label_w = side_w - (btn_size * 2) - (padding * 5); // room for 2 buttons + extra padding
-		if (label_w < 40) label_w = 40; // minimum label width
+		float label_w = side_w - (btn_size * 2) - (padding * 6); // room for 2 buttons + extra padding
+		if (label_w < 40 * ui_scale) label_w = 40 * ui_scale; // scale minimum label width
 
 		nk_layout_row_push(ctx, label_w);
 		nk_label(ctx, "Hierarchy", NK_TEXT_LEFT);
@@ -148,16 +168,27 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 			occupiedRects.push_back(r);
 		}
 
-		// 2) Create button: fixed square
+		// 2) Create button: fixed square with centered plus symbol
 		nk_layout_row_push(ctx, btn_size);
+
+		// Method 1: Force text alignment to center for the button
+		struct nk_style_button original_plus_style = ctx->style.button;
+		ctx->style.button.text_alignment = NK_TEXT_CENTERED; // Ensure horizontal centering
+
 		bool plusClicked = nk_button_symbol(ctx, NK_SYMBOL_PLUS);
+
+		// Restore original style
+		ctx->style.button = original_plus_style;
+
 		{
 			struct nk_rect r = nk_widget_bounds(ctx);
 			occupiedRects.push_back(r);
 		}
+
 		if (plusClicked) {
 			int parentLevel = 0;
 			int insertIndex = (int)entityNames.size();
+			
 			if (selectedIndex >= 0 && selectedIndex < (int)entityNames.size()) {
 				parentLevel = entityLevels[selectedIndex];
 				insertIndex = selectedIndex + 1;
@@ -165,6 +196,7 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 					insertIndex++;
 				}
 			}
+			
 			entityNames.insert(entityNames.begin() + insertIndex, "NewEntity");
 			entityLevels.insert(entityLevels.begin() + insertIndex, parentLevel + 1);
 			selectedIndex = insertIndex;
@@ -182,34 +214,48 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 
 		// Always render the same type of button to maintain consistent positioning
 		if (canDelete) {
+			// Store original style and ensure centering
+			struct nk_style_button original_delete_style = ctx->style.button;
+			ctx->style.button.text_alignment = NK_TEXT_CENTERED; // Ensure horizontal centering
+			
 			deleteClicked = nk_button_symbol(ctx, NK_SYMBOL_MINUS);
+			
+			// Restore original style
+			ctx->style.button = original_delete_style;
 		} else {
 			// Use the same button call but store the original style first
 			struct nk_style_button original_style = ctx->style.button;
-			ctx->style.button.normal = ctx->style.button.hover;  // Make it look disabled
+			
+			// Set disabled appearance
+			ctx->style.button.normal = ctx->style.button.hover; // Make it look disabled
 			ctx->style.button.hover = ctx->style.button.normal;
 			ctx->style.button.active = ctx->style.button.normal;
-			ctx->style.button.text_normal = nk_rgb(128, 128, 128);  // Gray text
+			ctx->style.button.text_normal = nk_rgb(128, 128, 128); // Gray text
 			ctx->style.button.text_hover = nk_rgb(128, 128, 128);
 			ctx->style.button.text_active = nk_rgb(128, 128, 128);
-
-			nk_button_symbol(ctx, NK_SYMBOL_MINUS);  // Same call, just styled differently
-
+			ctx->style.button.text_alignment = NK_TEXT_CENTERED; // Ensure horizontal centering even when disabled
+			
+			nk_button_symbol(ctx, NK_SYMBOL_MINUS); // Same call, just styled differently
+			
 			// Restore original style
 			ctx->style.button = original_style;
 		}
+
 		{
 			struct nk_rect r = nk_widget_bounds(ctx);
 			occupiedRects.push_back(r);
 		}
+
 		if (deleteClicked && selectedIndex > 0 && selectedIndex < (int)entityNames.size()) {
 			int delIndex = selectedIndex;
 			int delLevel = entityLevels[delIndex];
+			
 			// find end of subtree
 			int end = delIndex + 1;
 			while (end < (int)entityNames.size() && entityLevels[end] > delLevel) {
 				end++;
 			}
+			
 			// find parent index
 			int parentIndex = -1;
 			for (int k = delIndex - 1; k >= 0; --k) {
@@ -243,19 +289,20 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 		nk_layout_row_end(ctx);
 
 		// ── Create scrollable region for the entity list ──────────────────────────
-		const float row_h = 22.0f;
+		// Scale row height based on font size with some padding
+		const float row_h = (scaled_font_height + 8.0f * ui_scale); // font height + padding
 		const int count = (int)entityNames.size();
-		const float total_content_height = count * row_h + 10.0f; // Extra padding
-		const float available_height = sidebar_h - 40.0f; // Leave room for header
+		const float total_content_height = count * row_h + 10.0f * ui_scale; // Scale extra padding
+		const float available_height = sidebar_h - (40.0f * ui_scale); // Scale header space
 
 		// Create a group with scrollbar
 		nk_layout_row_dynamic(ctx, available_height, 1);
 		if (nk_group_begin(ctx, "entity_list", 0)) {
 
-			// Layout parameters for items
-			const float x_offset = 12.0f;
-			const float step = 14.0f;
-			const float text_pad = 4.0f;
+			// Layout parameters for items - all scaled
+			const float x_offset = 12.0f * ui_scale;
+			const float step = 14.0f * ui_scale;
+			const float text_pad = 4.0f * ui_scale;
 			struct nk_color line_color = nk_rgb(64, 64, 64);
 			struct nk_command_buffer* canvas = nk_window_get_canvas(ctx);
 			struct nk_rect group_bounds = nk_layout_widget_bounds(ctx);
@@ -276,13 +323,14 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 				float y_pos = i * row_h;
 
 				// Set layout space for this item
-				nk_layout_space_push(ctx, nk_rect(0, y_pos, side_w - 20, row_h)); // -20 for scrollbar
+				nk_layout_space_push(ctx, nk_rect(0, y_pos, side_w - 20 * ui_scale, row_h)); // Scale scrollbar space
 
 				// CRITICAL FIX: Get the actual widget bounds which include scroll offset
 				struct nk_rect widget_bounds = nk_widget_bounds(ctx);
 				float y_center = widget_bounds.y + row_h * 0.5f;
 
-				// Draw ancestor vertical lines
+				// Draw ancestor vertical lines with scaled thickness
+				float line_thickness = std::max(1.0f, ui_scale);
 				for (int l = 0; l < level; ++l) {
 					bool needsLine = false;
 					for (int j = i + 1; j < count; ++j) {
@@ -301,13 +349,13 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 							}
 						}
 						if (!drawn) {
-							nk_stroke_line(canvas, vx, vy0, vx, vy1, 1.0f, line_color);
+							nk_stroke_line(canvas, vx, vy0, vx, vy1, line_thickness, line_color);
 							drawnVerticalLines.push_back({vx, {vy0, vy1}});
 						}
 					}
 				}
 
-				// Connector ├─ or └─
+				// Connector ├─ or └─ with scaled corner radius
 				bool isLast = true;
 				for (int j = i + 1; j < count; ++j) {
 					if (entityLevels[j] == level) { isLast = false; break; }
@@ -317,15 +365,15 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 					float px = group_bounds.x + x_offset + (level - 1)*step;
 					float hx = px + step;
 					float vy = y_center;
-					const float cr = 3.0f;
+					const float cr = 3.0f * ui_scale; // Scale corner radius
 					if (isLast) {
-						nk_stroke_line(canvas, px, vy - row_h*0.5f, px, vy - cr, 1.0f, line_color);
-						nk_stroke_line(canvas, px, vy - cr, px + cr, vy, 1.0f, line_color);
-						nk_stroke_line(canvas, px + cr, vy, hx, vy, 1.0f, line_color);
+						nk_stroke_line(canvas, px, vy - row_h*0.5f, px, vy - cr, line_thickness, line_color);
+						nk_stroke_line(canvas, px, vy - cr, px + cr, vy, line_thickness, line_color);
+						nk_stroke_line(canvas, px + cr, vy, hx, vy, line_thickness, line_color);
 					} else {
-						nk_stroke_line(canvas, px, vy - row_h*0.5f, px, vy + row_h*0.5f, 1.0f, line_color);
-						nk_stroke_line(canvas, px, vy - cr, px + cr, vy, 1.0f, line_color);
-						nk_stroke_line(canvas, px + cr, vy, hx, vy, 1.0f, line_color);
+						nk_stroke_line(canvas, px, vy - row_h*0.5f, px, vy + row_h*0.5f, line_thickness, line_color);
+						nk_stroke_line(canvas, px, vy - cr, px + cr, vy, line_thickness, line_color);
+						nk_stroke_line(canvas, px + cr, vy, hx, vy, line_thickness, line_color);
 					}
 				}
 				// Root vertical if has children
@@ -337,21 +385,25 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 					}
 					if (hasChild) {
 						float vx = group_bounds.x + x_offset + level*step;
-						nk_stroke_line(canvas, vx, y_center, vx, y_center + row_h*0.5f, 1.0f, line_color);
+						nk_stroke_line(canvas, vx, y_center, vx, y_center + row_h*0.5f, line_thickness, line_color);
 					}
 				}
 
 				// Create a widget for this entity - moved up to get proper bounds
 				struct nk_rect label_rect;
-				label_rect.x = group_bounds.x + x_offset + level*step + text_pad;
+				label_rect.x = group_bounds.x + x_offset + level * step + text_pad;
 				label_rect.y = widget_bounds.y;
-				label_rect.w = side_w - (x_offset + level*step) - text_pad - 20; // -20 for scrollbar
+				label_rect.w = side_w - (label_rect.x - group_bounds.x + 20.0f * ui_scale); // Scale scrollbar account
 				label_rect.h = row_h;
+
+				// Scale selection highlight border radius and thickness
+				float highlight_radius = 4.0f * ui_scale;
+				float highlight_thickness = std::max(1.0f, ui_scale);
 
 				// Highlight if selected
 				if (i == selectedIndex) {
-					nk_fill_rect(canvas, label_rect, 4.0f, nk_rgb(100, 140, 230));
-					nk_stroke_rect(canvas, label_rect, 4.0f, 1.0f, nk_rgb(255, 255, 255));
+					nk_fill_rect(canvas, label_rect, highlight_radius, nk_rgb(100, 140, 230));
+					nk_stroke_rect(canvas, label_rect, highlight_radius, highlight_thickness, nk_rgb(255, 255, 255));
 				}
 				nk_draw_text(canvas, label_rect,
 							 entityNames[i].c_str(), (int)entityNames[i].length(),
@@ -374,7 +426,8 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 				if (dragIndex == i && !dragging && mouseDown) {
 					float dx = mousePos.x - dragStartPos.x;
 					float dy = mousePos.y - dragStartPos.y;
-					if (sqrt(dx*dx + dy*dy) > 5.0f) {
+					float drag_threshold = 5.0f * ui_scale; // Scale drag threshold
+					if (sqrt(dx*dx + dy*dy) > drag_threshold) {
 						dragging = true;
 						selectedIndex = dragIndex;
 					}
@@ -391,10 +444,14 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 
 			nk_layout_space_end(ctx);
 
-			// Ghost during drag
+			// Ghost during drag - scale ghost dimensions and offset
 			if (dragging && dragIndex >= 0 && dragIndex < (int)entityNames.size()) {
-				struct nk_rect ghost = nk_rect(mousePos.x + 8, mousePos.y + 8, 100, row_h);
-				nk_fill_rect(canvas, ghost, 4.0f, nk_rgba(150,150,150,128));
+				float ghost_width = 100.0f * ui_scale;
+				float ghost_offset = 8.0f * ui_scale;
+				float ghost_radius = 4.0f * ui_scale;
+				
+				struct nk_rect ghost = nk_rect(mousePos.x + ghost_offset, mousePos.y + ghost_offset, ghost_width, row_h);
+				nk_fill_rect(canvas, ghost, ghost_radius, nk_rgba(150,150,150,128));
 				nk_draw_text(canvas, ghost, entityNames[dragIndex].c_str(),
 							 (int)entityNames[dragIndex].length(),
 							 ctx->style.font, nk_rgb(0,0,0), nk_rgb(230,230,230));
@@ -411,7 +468,7 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 						struct nk_rect lbl = nk_rect(
 							group_bounds.x + x_offset + lvl*step + text_pad,
 							group_bounds.y + y_pos_check,
-							side_w - (x_offset + lvl*step) - text_pad - 20,
+							side_w - (x_offset + lvl*step) - text_pad - 20 * ui_scale, // Scale scrollbar space
 							row_h
 						);
 						if (mousePos.x >= lbl.x && mousePos.x < lbl.x + lbl.w &&
@@ -490,6 +547,8 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 	}
 	nk_end(ctx);
 	
+	// Restore original font height
+	font->height = original_font_height;
 	
 	selected_item = selectedIndex;
 	end_selection = selected_item+1;
