@@ -21,6 +21,6 @@ void DrawAssetBrowser(int drag_x, int drag_y, int win_h);
 void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int menu_height, int sidebar_h);
 
 /// Renders the properties panel below the sidebar
-void DrawProperties(int side_x, int sidebar_h, int menu_height, int side_w, int prop_h);
+void DrawProperties(Runtime::EditorRuntime *editor, int side_x, int sidebar_h, int menu_height, int side_w, int prop_h);
 
 } // namespace EditorPanels

@@ -245,7 +245,7 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	int Hierarchy_h = right_split_y-menu_height;
 	int prop_h = content_h - Hierarchy_h;
 	EditorPanels::DrawHierarchy(this,side_x,side_w,menu_height,Hierarchy_h);
-	EditorPanels::DrawProperties(side_x,Hierarchy_h,menu_height,side_w,prop_h);
+	EditorPanels::DrawProperties(this,side_x,Hierarchy_h,menu_height,side_w,prop_h);
 	auto c = SDL_Rect{drag_x,right_split_y-1,side_w,2};
 	SDL_RenderFillRect(renderer, &c);
 	nk_sdl_render(NK_ANTI_ALIASING_ON);

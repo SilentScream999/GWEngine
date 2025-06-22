@@ -1,16 +1,16 @@
 # ninja log v5
 23	485	7722530677620224	CMakeFiles/HL2Engine.dir/Engine/Core/stb_impl.cpp.obj	94fbcd43eb94bc19
-26	1365	7722603601726112	CMakeFiles/HL2Engine.dir/Engine/Core/Editor.cpp.obj	269bf1485ec845cf
+16	1318	7722625024830654	CMakeFiles/HL2Engine.dir/Engine/Core/Editor.cpp.obj	269bf1485ec845cf
 26	581	7722530678602734	CMakeFiles/HL2Engine.dir/Engine/Renderer/Camera.cpp.obj	68a016e93e4981b7
 19	612	7722605864256321	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererGL21.cpp.obj	8ca82507c574a5d0
 36	697	7722603069881168	CMakeFiles/HL2Engine.dir/Engine/main.cpp.obj	212d7652261b0514
 33	866	7722530681440907	CMakeFiles/HL2Engine.dir/Engine/Renderer/Model.cpp.obj	36057852555a8043
 22	669	7722603594827141	CMakeFiles/HL2Engine.dir/Engine/Core/Application.cpp.obj	6fc573b813ee3f38
-24	829	7722608744749312	CMakeFiles/HL2Engine.dir/Engine/Core/EditorPanels.cpp.obj	ce6ce86852da7db7
+20	783	7722638013454039	CMakeFiles/HL2Engine.dir/Engine/Core/EditorPanels.cpp.obj	ce6ce86852da7db7
 27	798	7722608744461653	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererManager.cpp.obj	faed9eaed627578a
 29	897	7722530681764564	CMakeFiles/HL2Engine.dir/Engine/Renderer/Mesh.cpp.obj	34e99e6eef5009c2
 25	756	7722603070539812	CMakeFiles/HL2Engine.dir/Engine/Core/Play.cpp.obj	4517d44fa7b59d37
 21	892	7722604356254561	CMakeFiles/HL2Engine.dir/Engine/Renderer/RendererDX9.cpp.obj	6d26ffab1b068168
-829	1291	7722608745623623	HL2Engine.exe	b3cab33a9b3c3c97
-16	774	7722609763899233	CMakeFiles/HL2Engine.dir/Engine/Core/EditorPanels.cpp.obj	ce6ce86852da7db7
-775	1179	7722609764810357	HL2Engine.exe	b3cab33a9b3c3c97
+784	1192	7722638014346238	HL2Engine.exe	b3cab33a9b3c3c97
+29	817	7722638880123313	CMakeFiles/HL2Engine.dir/Engine/Core/EditorPanels.cpp.obj	ce6ce86852da7db7
+818	1221	7722638880998379	HL2Engine.exe	b3cab33a9b3c3c97

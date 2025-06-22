@@ -10,6 +10,9 @@
 extern struct nk_context *ctx;
 extern SDL_Renderer* renderer;
 
+int selected_item = 0;
+int end_selection = 0;
+
 namespace EditorPanels {
 
 void DrawTopMenu(int win_w, int menu_height) {
@@ -483,50 +486,115 @@ void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int m
 		}
 	}
 	nk_end(ctx);
+	
+	selected_item = selectedIndex;
+	end_selection = selected_item+1;
+	
+	while (end_selection < (int)entityNames.size() && entityLevels[end_selection] > entityLevels[selected_item]) {
+		end_selection++;
+	}
 }
 
-void DrawProperties(int side_x, int sidebar_h, int menu_height, int side_w, int prop_h) {
+void DrawProperties(Runtime::EditorRuntime *editor, int side_x, int sidebar_h, int menu_height, int side_w, int prop_h) {
 	struct nk_rect prop_rect = nk_rect((float)side_x, (float)(menu_height + sidebar_h), (float)side_w, (float)prop_h);
+	
 	if (nk_begin(ctx, "Properties", prop_rect, NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(ctx, 20, 1);
 		nk_label(ctx, "Properties", NK_TEXT_CENTERED);
 
-		static float posX=0.0f, posY=0.0f, posZ=0.0f;
-		static char bufX[32], bufY[32], bufZ[32];
-		static bool init=false;
-		if (!init) {
-			snprintf(bufX,32,"%.4f",posX);
-			snprintf(bufY,32,"%.4f",posY);
-			snprintf(bufZ,32,"%.4f",posZ);
-			init=true;
+		float posX=0.0f, posY=0.0f, posZ=0.0f;
+		
+		if (0 <= selected_item && selected_item < entityIndexes.size()){
+			int currentmesh = entityIndexes[selected_item];
+			
+			if (currentmesh > 0 && currentmesh < editor->meshes.size()) {
+				std::shared_ptr<Mesh> baseMesh = editor->meshes[currentmesh];
+				
+				posX = baseMesh->transform.position.x;
+				posY = baseMesh->transform.position.y;
+				posZ = baseMesh->transform.position.z;
+			}
 		}
+		
+		char bufX[32], bufY[32], bufZ[32];
+//		bool init=false;
+//		if (!init) {
+		snprintf(bufX,32,"%.4f",posX);
+		snprintf(bufY,32,"%.4f",posY);
+		snprintf(bufZ,32,"%.4f",posZ);
+//			init=true;
+//		}
+		
 
 		auto draw_field=[&](const char* label, float& val, char* buf) {
 			const float rowH=22.0f, lblW=80.0f, btnW=20.0f, fldW=80.0f;
+			float oldVal = val;
+			
 			nk_layout_row_begin(ctx, NK_STATIC, rowH, 4);
 			nk_layout_row_push(ctx,lblW);
 			nk_label(ctx,label,NK_TEXT_LEFT);
+			
 			nk_layout_row_push(ctx,btnW);
 			if (nk_button_symbol(ctx,NK_SYMBOL_TRIANGLE_LEFT)) {
 				val=std::clamp(val-0.1f,-100.0f,100.0f);
 				snprintf(buf,32,"%.4f",val);
 			}
+			
 			nk_layout_row_push(ctx,fldW);
 			if (nk_edit_string_zero_terminated(ctx,NK_EDIT_FIELD|NK_EDIT_CLIPBOARD,buf,32,nk_filter_float)) {
 				val=strtof(buf,nullptr);
 				snprintf(buf,32,"%.4f",val);
 			}
+			
 			nk_layout_row_push(ctx,btnW);
 			if (nk_button_symbol(ctx,NK_SYMBOL_TRIANGLE_RIGHT)) {
 				val=std::clamp(val+0.1f,-100.0f,100.0f);
 				snprintf(buf,32,"%.4f",val);
 			}
 			nk_layout_row_end(ctx);
+			
+			return val;
 		};
-
-		draw_field("Position X", posX, bufX);
-		draw_field("Position Y", posY, bufY);
-		draw_field("Position Z", posZ, bufZ);
+		
+		float x = draw_field("Position X", posX, bufX);
+		float y = draw_field("Position Y", posY, bufY);
+		float z = draw_field("Position Z", posZ, bufZ);
+		
+		if (0 <= selected_item && selected_item < entityIndexes.size()){
+			int currentmesh = entityIndexes[selected_item];
+			
+			if (currentmesh > 0 && currentmesh < editor->meshes.size()) {
+				std::shared_ptr<Mesh> baseMesh = editor->meshes[currentmesh];
+				
+				float bmx = baseMesh->transform.position.x;
+				float bmy = baseMesh->transform.position.y;
+				float bmz = baseMesh->transform.position.z;
+				
+				if (bmx != x || bmy != y || bmz != z){
+					float dx = x-bmx;
+					float dy = y-bmy;
+					float dz = z-bmz;
+					
+					for (int i = selected_item; i < end_selection; i++) {
+						int thismesh = entityIndexes[i];
+						
+						printf("Trying this: %d\n", thismesh);
+						
+						if (thismesh < 0 || thismesh >= editor->meshes.size()) {
+							continue;
+						}
+						
+						printf("Continueing\n");
+						
+						auto mesh = editor->meshes[thismesh];
+						mesh->transform.position.x += dx;
+						mesh->transform.position.y += dy;
+						mesh->transform.position.z += dz;
+						Renderer::RendererManager::UpdateMesh(thismesh, mesh);
+					}
+				}
+			}
+		}
 	}
 	nk_end(ctx);
 }
