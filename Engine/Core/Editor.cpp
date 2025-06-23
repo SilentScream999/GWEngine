@@ -1,6 +1,7 @@
 // Editor.cpp
 #include "Editor.h"
 #include "EditorPanels.h"
+#include "EditorFolderModal.h"
 #include "../Renderer/RendererManager.h"
 
 #include <SDL.h>
@@ -114,60 +115,65 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 
 	int win_w, win_h;
 	SDL_GetWindowSize(win, &win_w, &win_h);
-	int content_h = std::max(100, win_h - menu_height);
+	int content_h = (std::max)(100, win_h - menu_height);
 
-	int drag_x = std::clamp(int(ratio_x * win_w), min_side, win_w - min_side);
-	int drag_y = std::clamp(menu_height + int(ratio_y * content_h), menu_height + min_top, win_h - min_bot);
-	int right_split_y = std::clamp(menu_height + int(right_ratio * content_h), menu_height + min_top, menu_height + content_h - min_bot);
+	int drag_x = (std::max)(min_side, (std::min)(win_w - min_side, int(ratio_x * win_w)));
+	int drag_y = (std::max)(menu_height + min_top, (std::min)(win_h - min_bot, menu_height + int(ratio_y * content_h)));
+	int right_split_y = (std::max)(menu_height + min_top, (std::min)(menu_height + content_h - min_bot, menu_height + int(right_ratio * content_h)));
 
 	while (SDL_PollEvent(&evt)) {
 		nk_sdl_handle_event(&evt);
 		if (evt.type == SDL_QUIT) { Cleanup(); std::exit(0); }
-		else if (evt.type == SDL_MOUSEBUTTONDOWN) {
-			if (evt.button.button == SDL_BUTTON_LEFT) {
-				int mx = evt.button.x, my = evt.button.y;
-				dragging_vsplit = (std::abs(mx - drag_x) <= 5) && (my >= menu_height && my <= win_h);
-				dragging_hsplit = (std::abs(my - drag_y) <= 5) && (mx >= 0 && mx <= drag_x);
-				dragging_rhsplit = (mx >= drag_x) && (std::abs(my - right_split_y) <= 5);
-			} else if (evt.button.button == SDL_BUTTON_RIGHT) {
-				rightMouseHeld = true;
-				firstMouse = true;
+		
+		// Only handle other events if the overlay is not showing
+		if (!EditorFolderModal::ShouldShowFolderOverlay()) {
+			if (evt.type == SDL_MOUSEBUTTONDOWN) {
+				if (evt.button.button == SDL_BUTTON_LEFT) {
+					int mx = evt.button.x, my = evt.button.y;
+					dragging_vsplit = (std::abs(mx - drag_x) <= 5) && (my >= menu_height && my <= win_h);
+					dragging_hsplit = (std::abs(my - drag_y) <= 5) && (mx >= 0 && mx <= drag_x);
+					dragging_rhsplit = (mx >= drag_x) && (std::abs(my - right_split_y) <= 5);
+				} else if (evt.button.button == SDL_BUTTON_RIGHT) {
+					rightMouseHeld = true;
+					firstMouse = true;
+				}
 			}
-		}
-		else if (evt.type == SDL_MOUSEBUTTONUP) {
-			if (evt.button.button == SDL_BUTTON_LEFT)
-				dragging_vsplit = dragging_hsplit = dragging_rhsplit = false;
-			else if (evt.button.button == SDL_BUTTON_RIGHT)
-				rightMouseHeld = false;
-		}
-		else if (evt.type == SDL_KEYDOWN) {
-			pressedKeys.insert(evt.key.keysym.scancode);
-		}
-		else if (evt.type == SDL_KEYUP) {
-			pressedKeys.erase(evt.key.keysym.scancode);
+			else if (evt.type == SDL_MOUSEBUTTONUP) {
+				if (evt.button.button == SDL_BUTTON_LEFT)
+					dragging_vsplit = dragging_hsplit = dragging_rhsplit = false;
+				else if (evt.button.button == SDL_BUTTON_RIGHT)
+					rightMouseHeld = false;
+			}
+			else if (evt.type == SDL_KEYDOWN) {
+				pressedKeys.insert(evt.key.keysym.scancode);
+			}
+			else if (evt.type == SDL_KEYUP) {
+				pressedKeys.erase(evt.key.keysym.scancode);
+			}
 		}
 	}
 	nk_input_end(ctx);
 
-	if (dragging_vsplit || dragging_hsplit || dragging_rhsplit) {
+	// Handle splitter dragging only if overlay is not showing
+	if (!EditorFolderModal::ShouldShowFolderOverlay() && (dragging_vsplit || dragging_hsplit || dragging_rhsplit)) {
 		int mx, my;
 		SDL_GetMouseState(&mx, &my);
 		if (dragging_vsplit)
-			ratio_x = std::clamp(mx / float(win_w), 0.0f, 1.0f);
+			ratio_x = (std::max)(0.0f, (std::min)(1.0f, mx / float(win_w)));
 		if (dragging_hsplit)
-			ratio_y = std::clamp((my - menu_height) / float(content_h), 0.0f, 1.0f);
+			ratio_y = (std::max)(0.0f, (std::min)(1.0f, (my - menu_height) / float(content_h)));
 		if (dragging_rhsplit)
-			right_ratio = std::clamp((my - menu_height) / float(content_h), 0.0f, 1.0f);
-		drag_x = std::clamp(int(ratio_x * win_w), min_side, win_w - min_side);
+			right_ratio = (std::max)(0.0f, (std::min)(1.0f, (my - menu_height) / float(content_h)));
+		drag_x = (std::max)(min_side, (std::min)(win_w - min_side, int(ratio_x * win_w)));
 		content_h = win_h - menu_height;
-		drag_y = std::clamp(menu_height + int(ratio_y * content_h), menu_height + min_top, win_h - min_bot);
-		right_split_y = std::clamp(menu_height + int(right_ratio * content_h), menu_height + min_top, menu_height + content_h - min_bot);
+		drag_y = (std::max)(menu_height + min_top, (std::min)(win_h - min_bot, menu_height + int(ratio_y * content_h)));
+		right_split_y = (std::max)(menu_height + min_top, (std::min)(menu_height + content_h - min_bot, menu_height + int(right_ratio * content_h)));
 	}
 
-	 // Figure out if the cursor is inside the GL frame
+	// Figure out if the cursor is inside the GL frame (only relevant when overlay is not showing)
 	int mx, my;
 	SDL_GetMouseState(&mx, &my);
-	bool inGLFrame = (mx >= 0 && mx < drag_x)
+	bool inGLFrame = !EditorFolderModal::ShouldShowFolderOverlay() && (mx >= 0 && mx < drag_x)
 				  && (my >= menu_height && my < drag_y);
 
 	// Prepare timing
@@ -218,39 +224,55 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	}
 
 	// Capture & display frame
-	int top_h = std::max(1, drag_y - menu_height);
-	auto frameData = Renderer::RendererManager::rendererGL->CaptureFrame();
-	if (frameData.width != drag_x || frameData.height != top_h) {
-		Renderer::RendererManager::rendererGL->setSize(drag_x, top_h);
-		frameData = Renderer::RendererManager::rendererGL->CaptureFrame();
-	}
-	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)frameData.pixels.data(), frameData.width, frameData.height, 32, frameData.width*4,
-												   0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-	SDL_FreeSurface(surface);
-	struct nk_image nk_img = nk_image_ptr(texture);
-
-	// Draw GUI
-	SDL_SetRenderDrawColor(renderer,50,50,50,255);
+	SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
 	SDL_RenderClear(renderer);
-	EditorPanels::DrawTopMenu(win_w, menu_height);
-	EditorPanels::DrawImageView(nk_img, drag_x, menu_height, top_h);
-	EditorPanels::DrawAssetBrowser(drag_x, drag_y, win_h);
-	SDL_SetRenderDrawColor(renderer,100,100,100,255);
-	auto a = SDL_Rect{drag_x-1,menu_height,2,content_h};
-	SDL_RenderFillRect(renderer, &a);
-	auto b = SDL_Rect{0,drag_y-1,drag_x,2};
-	SDL_RenderFillRect(renderer, &b);
-	int side_x = drag_x, side_w = win_w-drag_x;
-	int Hierarchy_h = right_split_y-menu_height;
-	int prop_h = content_h - Hierarchy_h;
-	EditorPanels::DrawHierarchy(this,side_x,side_w,menu_height,Hierarchy_h);
-	EditorPanels::DrawProperties(this,side_x,Hierarchy_h,menu_height,side_w,prop_h);
-	auto c = SDL_Rect{drag_x,right_split_y-1,side_w,2};
-	SDL_RenderFillRect(renderer, &c);
+
+	SDL_Texture* texture = nullptr;  // Declare texture outside the conditional
+
+	if (!EditorFolderModal::ShouldShowFolderOverlay()) {
+		// Normal rendering
+		int top_h = (std::max)(1, drag_y - menu_height);
+		auto frameData = Renderer::RendererManager::rendererGL->CaptureFrame();
+		if (frameData.width != drag_x || frameData.height != top_h) {
+			Renderer::RendererManager::rendererGL->setSize(drag_x, top_h);
+			frameData = Renderer::RendererManager::rendererGL->CaptureFrame();
+		}
+		SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)frameData.pixels.data(), frameData.width, frameData.height, 32, frameData.width*4,
+													0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+		texture = SDL_CreateTextureFromSurface(renderer, surface);  // Remove SDL_Texture* here
+		SDL_FreeSurface(surface);
+		struct nk_image nk_img = nk_image_ptr(texture);
+
+		// Draw GUI
+		EditorPanels::DrawTopMenu(win_w, menu_height);
+		EditorPanels::DrawImageView(nk_img, drag_x, menu_height, top_h);
+		EditorPanels::DrawAssetBrowser(drag_x, drag_y, win_h);
+		SDL_SetRenderDrawColor(renderer,100,100,100,255);
+		auto a = SDL_Rect{drag_x-1,menu_height,2,content_h};
+		SDL_RenderFillRect(renderer, &a);
+		auto b = SDL_Rect{0,drag_y-1,drag_x,2};
+		SDL_RenderFillRect(renderer, &b);
+		int side_x = drag_x, side_w = win_w-drag_x;
+		int Hierarchy_h = right_split_y-menu_height;
+		int prop_h = content_h - Hierarchy_h;
+		EditorPanels::DrawHierarchy(this,side_x,side_w,menu_height,Hierarchy_h);
+		EditorPanels::DrawProperties(this,side_x,Hierarchy_h,menu_height,side_w,prop_h);
+		auto c = SDL_Rect{drag_x,right_split_y-1,side_w,2};
+		SDL_RenderFillRect(renderer, &c);
+	}
+
+	// Always draw the overlay if it should be shown (on top of everything else)
+	if (EditorFolderModal::ShouldShowFolderOverlay()) {
+		EditorFolderModal::DrawFolderSelectionOverlay(ctx, win_w, win_h);
+	}
+
 	nk_sdl_render(NK_ANTI_ALIASING_ON);
 	SDL_RenderPresent(renderer);
-	SDL_DestroyTexture(texture);
+
+	// Destroy texture after rendering is complete
+	if (texture) {
+		SDL_DestroyTexture(texture);
+	}
 }
 
 // ProcessInput overloads

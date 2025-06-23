@@ -90,6 +90,7 @@
     "xtr1common": "cpp",
     "xtree": "cpp",
     "xutility": "cpp",
-    "coroutine": "cpp"
+    "coroutine": "cpp",
+    "filesystem": "cpp"
   }
 }

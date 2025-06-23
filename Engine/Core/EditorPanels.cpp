@@ -1,4 +1,5 @@
 #include "EditorPanels.h"
+#include "EditorAssetsManager.h"
 #include "Core/Editor.h"
 #include "Renderer/RendererManager.h"
 #include "nuklear.h"
@@ -43,71 +44,8 @@ void DrawImageView(struct nk_image img, int drag_x, int menu_height, int top_h) 
 }
 
 void DrawAssetBrowser(int drag_x, int drag_y, int win_h) {
-	int asset_h = win_h - drag_y;
-	struct nk_rect asset_rect = nk_rect(0, (float)drag_y, (float)drag_x, (float)asset_h);
-	struct nk_vec2 old_padding = ctx->style.window.padding;
-	struct nk_vec2 old_spacing = ctx->style.window.spacing;
-	ctx->style.window.padding = nk_vec2(10, 10);
-	ctx->style.window.spacing = nk_vec2(10, 10);
-
-	if (nk_begin(ctx, "Assets", asset_rect, NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
-		const float hdrH = 16.0f;
-		nk_layout_row_dynamic(ctx, hdrH, 1);
-		nk_label(ctx, "Assets & File Tree", NK_TEXT_CENTERED);
-
-		float ratio[2] = { 0.25f, 0.75f };
-		nk_layout_row(ctx, NK_DYNAMIC, asset_h - hdrH, 2, ratio);
-
-		// File tree column
-		if (nk_group_begin(ctx, "FileTree", NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
-			nk_layout_row_dynamic(ctx, 18, 1);
-			nk_label(ctx, "Folder A", NK_TEXT_LEFT);
-			nk_label(ctx, "Folder B", NK_TEXT_LEFT);
-			nk_label(ctx, "Folder C", NK_TEXT_LEFT);
-			nk_group_end(ctx);
-		}
-
-		// Asset grid column with fixed square thumbnails
-		if (nk_group_begin(ctx, "AssetGrid", NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR)) {
-			static const char* assets[] = { "Asset 1", "Asset 2", "Asset 3" };
-			const int count = sizeof(assets)/sizeof(*assets);
-			const int cols = 3;
-			const float thumb = 64.0f;
-			const float labelH = 16.0f;
-			const float spacing = ctx->style.window.spacing.x;
-			int totalCols = cols * 2 - 1;
-
-			// Thumbnails: use nk_layout_row_begin + push thumb and spacing explicitly
-			nk_layout_row_begin(ctx, NK_STATIC, thumb, totalCols);
-			for (int i = 0; i < cols; ++i) {
-				nk_layout_row_push(ctx, thumb);
-				nk_button_label(ctx, "");
-				if (i < cols - 1) {
-					nk_layout_row_push(ctx, spacing);
-					nk_spacing(ctx, 1);
-				}
-			}
-			nk_layout_row_end(ctx);
-
-			// Labels under thumbnails
-			nk_layout_row_begin(ctx, NK_STATIC, labelH, totalCols);
-			for (int i = 0; i < cols; ++i) {
-				nk_layout_row_push(ctx, thumb);
-				nk_label(ctx, assets[i], NK_TEXT_CENTERED);
-				if (i < cols - 1) {
-					nk_layout_row_push(ctx, spacing);
-					nk_spacing(ctx, 1);
-				}
-			}
-			nk_layout_row_end(ctx);
-
-			nk_group_end(ctx);
-		}
-	}
-	nk_end(ctx);
-
-	ctx->style.window.padding = old_padding;
-	ctx->style.window.spacing = old_spacing;
+	// Delegate to the AssetsManager
+	AssetsManager::DrawAssetBrowser(drag_x, drag_y, win_h);
 }
 
 #include <vector>
