@@ -15,7 +15,8 @@ namespace EditorPanels {
     void DrawImageView(struct nk_image img, int drag_x, int menu_height, int top_h);
 
     /// Renders the asset browser panel on the left
-    void DrawAssetBrowser(int drag_x, int drag_y, int win_h);
+    // Update this function declaration
+     void DrawAssetBrowser(Runtime::EditorRuntime* editorRuntime, int drag_x, int drag_y, int win_h);
 
     /// Renders the hierarchy/tree panel
     void DrawHierarchy(Runtime::EditorRuntime *editor, int side_x, int side_w, int menu_height, int sidebar_h);

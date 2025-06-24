@@ -100,6 +100,10 @@ bool Runtime::EditorRuntime::Init() {
 
 // Prepare for frame rendering and handle input
 void Runtime::EditorRuntime::PrepareForFrameRender() {
+
+	static int lastWinW = 0, lastWinH = 0;
+	static bool firstFrame = true;
+
 	static float ratio_x = 0.75f, ratio_y = 0.75f, right_ratio = 0.5f;
 	static bool dragging_vsplit = false,
 				dragging_hsplit = false,
@@ -120,6 +124,26 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 	int drag_x = (std::max)(min_side, (std::min)(win_w - min_side, int(ratio_x * win_w)));
 	int drag_y = (std::max)(menu_height + min_top, (std::min)(win_h - min_bot, menu_height + int(ratio_y * content_h)));
 	int right_split_y = (std::max)(menu_height + min_top, (std::min)(menu_height + content_h - min_bot, menu_height + int(right_ratio * content_h)));
+
+	if (firstFrame) {
+		lastWinW = win_w;
+		lastWinH = win_h;
+		firstFrame = false;
+		windowResized = true;
+	} else if (win_w != lastWinW || win_h != lastWinH) {
+		lastWinW = win_w;
+		lastWinH = win_h;
+		windowResized = true;
+	} else {
+		windowResized = false;
+	}
+
+	    // UPDATE: Store current frame info for external access
+    currentFrameInfo.x = 0;
+    currentFrameInfo.y = menu_height;
+    currentFrameInfo.width = drag_x;
+    currentFrameInfo.height = (std::max)(1, drag_y - menu_height);
+    currentFrameInfo.isVisible = !EditorFolderModal::ShouldShowFolderOverlay();
 
 	while (SDL_PollEvent(&evt)) {
 		nk_sdl_handle_event(&evt);
@@ -246,7 +270,7 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 		// Draw GUI
 		EditorPanels::DrawTopMenu(win_w, menu_height);
 		EditorPanels::DrawImageView(nk_img, drag_x, menu_height, top_h);
-		EditorPanels::DrawAssetBrowser(drag_x, drag_y, win_h);
+		EditorPanels::DrawAssetBrowser(this, drag_x, drag_y, win_h);
 		SDL_SetRenderDrawColor(renderer,100,100,100,255);
 		auto a = SDL_Rect{drag_x-1,menu_height,2,content_h};
 		SDL_RenderFillRect(renderer, &a);

@@ -43,9 +43,9 @@ void DrawImageView(struct nk_image img, int drag_x, int menu_height, int top_h) 
 	nk_end(ctx);
 }
 
-void DrawAssetBrowser(int drag_x, int drag_y, int win_h) {
-	// Delegate to the AssetsManager
-	AssetsManager::DrawAssetBrowser(drag_x, drag_y, win_h);
+void DrawAssetBrowser(Runtime::EditorRuntime* editorRuntime, int drag_x, int drag_y, int win_h) {
+    // Delegate to the AssetsManager with the correct signature
+    AssetsManager::DrawAssetBrowser(editorRuntime, drag_x, drag_y, win_h);
 }
 
 #include <vector>
