@@ -22,6 +22,7 @@ public:
 	std::vector<Vertex>      vertices;
 	std::vector<uint32_t>    indices;
 	Transform                transform;
+	bool                     is_castable = true;
 
 	bool LoadFromOBJ(const std::string& path);
 };

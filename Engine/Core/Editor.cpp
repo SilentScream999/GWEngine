@@ -24,6 +24,7 @@
 #include "nuklear.h"
 #include "nuklear_sdl_renderer.h"
 #include "Logger.h"
+#include "../Core/MathHelpers.h"
 
 // Global input state
 static std::unordered_set<SDL_Scancode> pressedKeys;
@@ -37,9 +38,9 @@ bool Runtime::EditorRuntime::DeleteMesh(int meshindex) {
 	if (meshindex < 0 || meshindex >= meshes.size()) {
 		return false;
 	}
-	
+
 	meshes[meshindex] = nullptr;
-	
+
 	return Renderer::RendererManager::DeleteMesh(meshindex);
 }
 
@@ -50,21 +51,23 @@ int Runtime::EditorRuntime::AddMesh(std::string filepath, glm::vec3 pos, glm::ve
 	}
 	mesh->transform.position = pos;
 	mesh->transform.position = rot;
-	
+
 	int indx = Renderer::RendererManager::AddMesh(mesh);
-	
+
 	if (indx >= meshes.size()) {
 		meshes.resize(indx+1);
 	}
-	
+
 	meshes[indx] = mesh;
-	
+
 	return indx;
 }
 
 // Initialization
 bool Runtime::EditorRuntime::Init() {
 	int gridIndex = AddMesh("assets/models/grid.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0));
+	meshes[gridIndex]->is_castable = false;
+	
 //	int meshIndex2 = AddMesh("assets/models/test2.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), false);
 //	int meshIndex3 = AddMesh("assets/models/test.obj", glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), false); // we don't feel like adding it now because we're going to push them all in a moment
 
@@ -138,17 +141,17 @@ void Runtime::EditorRuntime::PrepareForFrameRender() {
 		windowResized = false;
 	}
 
-	    // UPDATE: Store current frame info for external access
-    currentFrameInfo.x = 0;
-    currentFrameInfo.y = menu_height;
-    currentFrameInfo.width = drag_x;
-    currentFrameInfo.height = (std::max)(1, drag_y - menu_height);
-    currentFrameInfo.isVisible = !EditorFolderModal::ShouldShowFolderOverlay();
+		// UPDATE: Store current frame info for external access
+	currentFrameInfo.x = 0;
+	currentFrameInfo.y = menu_height;
+	currentFrameInfo.width = drag_x;
+	currentFrameInfo.height = (std::max)(1, drag_y - menu_height);
+	currentFrameInfo.isVisible = !EditorFolderModal::ShouldShowFolderOverlay();
 
 	while (SDL_PollEvent(&evt)) {
 		nk_sdl_handle_event(&evt);
 		if (evt.type == SDL_QUIT) { Cleanup(); std::exit(0); }
-		
+
 		// Only handle other events if the overlay is not showing
 		if (!EditorFolderModal::ShouldShowFolderOverlay()) {
 			if (evt.type == SDL_MOUSEBUTTONDOWN) {
@@ -306,6 +309,18 @@ void Runtime::EditorRuntime::ProcessInput(float xpos, float ypos, std::function<
 
 void Runtime::EditorRuntime::ProcessInput(GLFWwindow* window, float dt) {
 	Renderer::RendererManager::cam->ProcessInput(window,dt);
+
+	glm::vec3 direct = MathHelpers::Forward(Renderer::RendererManager::cam->transform.rotation);
+
+	Ray ray = Ray();
+	ray.origin = Renderer::RendererManager::cam->transform.position;
+	ray.direction = direct;
+
+	std::optional<float> dist = MathHelpers::RayCast(ray, meshes);
+
+	if (dist.has_value()) {
+		std::cout << "Detected interact " << dist.value() << "\n";
+	}
 }
 
 // Cleanup

@@ -1,6 +1,7 @@
 #pragma once
 #include "Renderer/Mesh.h"
 #include <glm/glm.hpp>
+#include <iostream>
 #include <memory>
 #include <optional>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -66,10 +67,15 @@ namespace MathHelpers {
 	}
 	
 	inline std::optional<float> RayCast(Ray ray, const std::vector<std::shared_ptr<Mesh>>& meish) { // meish is the plural of mesh
-		Ray originalRay = ray;
 		std::optional<float> closestHit;
 		
-		for (const auto& mesh : meish) {
+		for (int indx = 0; indx < meish.size(); indx++) {
+			const auto& mesh = meish[indx];
+			
+			if (!mesh->is_castable){
+				continue;
+			}
+			
 			glm::mat4 inverseTransform = glm::inverse(mesh->transform.ModelMatrix());
 			glm::vec3 localOrigin = glm::vec3(inverseTransform * glm::vec4(ray.origin, 1.0));
 			glm::vec3 localDirection = glm::normalize(glm::vec3(inverseTransform * glm::vec4(ray.direction, 0.0)));
